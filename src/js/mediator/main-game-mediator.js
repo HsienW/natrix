@@ -5,6 +5,7 @@ import {mainView} from '../main/main-view.js';
 import {mainGameAnimation} from '../main/main-game-animation.js';
 import {mainGameCountdown} from '../main/main-game-countdown.js';
 import {gameStartState, gamePauseState, gameFinishState} from '../main/main-game-state.js';
+import {inputBuffer} from '../input/input-buffer.js';
 
 // mainGameMediator 負責中介管理遊戲進行相關的行為
 // 例如: 初始、進行、暫停、結束等等...
@@ -13,6 +14,7 @@ const mainGameMediator = (function () {
 
     operations.gameInit = function (countdownFinishNumber) {
         console.log('gameInit');
+        inputBuffer.clear();
         mainGameAnimation.animationAction('isInit');
         mainGameCountdown.countdownAction('countdownInit', countdownFinishNumber);
         mainView.callAction('initCountdownDom');
