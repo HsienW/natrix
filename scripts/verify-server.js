@@ -4,6 +4,17 @@ const path = require('path');
 
 const projectDirectory = path.resolve(__dirname, '..');
 const mode = process.argv[2];
+const defaultReadinessTimeoutMilliseconds = 90000;
+const configuredReadinessTimeout = process.env.SERVER_READY_TIMEOUT_MS;
+const readinessTimeoutMilliseconds = configuredReadinessTimeout === undefined
+    ? defaultReadinessTimeoutMilliseconds
+    : Number(configuredReadinessTimeout);
+
+if (!Number.isInteger(readinessTimeoutMilliseconds) || readinessTimeoutMilliseconds <= 0) {
+    console.error('SERVER_READY_TIMEOUT_MS must be a positive integer.');
+    process.exit(1);
+}
+
 const configurations = {
     development: {
         arguments: [
@@ -63,7 +74,7 @@ const request = (url) => new Promise((resolve, reject) => {
 });
 
 const waitForServer = async () => {
-    const deadline = Date.now() + 30000;
+    const deadline = Date.now() + readinessTimeoutMilliseconds;
 
     while (Date.now() < deadline) {
         if (childExited) {
@@ -82,7 +93,9 @@ const waitForServer = async () => {
         await delay(250);
     }
 
-    throw new Error(`${mode} server did not become ready within 30 seconds.`);
+    throw new Error(
+        `${mode} server did not become ready within ${readinessTimeoutMilliseconds} milliseconds.`,
+    );
 };
 
 const stopChild = async () => {
