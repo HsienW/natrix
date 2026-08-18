@@ -1,11 +1,10 @@
-import {checkKeydownIsExistOperation} from '../common/role-util.js';
 import {snakeDeadRuleChecker} from '../checker/checker.js';
 import {roleItemMediator} from '../mediator/role-item-mediator.js';
 import {map} from './map.js';
 import {snakeTypeInfo} from '../role-config/snake-type.js';
 import {getDirectionVector} from '../role-config/snake-operation.js';
 
-const Snake = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName) {
+const Snake = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, snakeStyleName) {
     this.newSnakeBody = 0;
     // this.snakeWin = false;
     this.snakeDead = false;
@@ -15,15 +14,7 @@ const Snake = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direc
     this.snakeName = playerId;
     this.snakeBody = initBodyPosition;
     this.snakeDirection = direction;
-    this.snakeOperation = operation;
     this.snakeStyleName = snakeStyleName;
-    this.initListenerOperation = function () {
-        window.addEventListener('keydown', event => {
-            if (checkKeydownIsExistOperation(event.code, this.snakeOperation)) {
-                this.snakeDirection = this.snakeOperation[event.code](this.snakeDirection);
-            }
-        });
-    }
 }
 
 Snake.prototype.getSnakeHeadPosition = function () {
@@ -138,8 +129,8 @@ Snake.prototype.renderSnakeItem = function () {
     }
 }
 
-const snakeFactory = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName) {
-    let newSnake = new Snake(snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName);
+const snakeFactory = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, snakeStyleName) {
+    let newSnake = new Snake(snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, snakeStyleName);
     roleItemMediator.callAction('addSnake', newSnake);
 }
 
@@ -154,7 +145,6 @@ const initSnakes = function () {
             initSnake.playerId,
             initSnake.initBodyPosition,
             initSnake.direction,
-            initSnake.operation,
             initSnake.snakeStyleName,
         );
     }

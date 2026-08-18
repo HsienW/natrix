@@ -78,7 +78,6 @@ const roleItemMediator = (function () {
 
     operations.initAllSnake = function () {
         initSnakes();
-        callRoleItemMethod(allSnake, 'initListenerOperation');
     }
 
     operations.checkAllSnakeDead = function () {

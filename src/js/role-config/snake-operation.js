@@ -19,64 +19,7 @@ const getDirectionVector = function (direction) {
     return vector ? {...vector} : null;
 };
 
-const BaseOperation = function () {
-}
-
-BaseOperation.prototype.doUp = function (direction) {
-    // if (direction.y !== 0) return;
-    return getDirectionVector(DIRECTIONS.UP);
-};
-
-BaseOperation.prototype.doDown = function (direction) {
-    // if (direction.y !== 0) return;
-    return getDirectionVector(DIRECTIONS.DOWN);
-};
-
-BaseOperation.prototype.doLeft = function (direction) {
-    // if (direction.x !== 0) return;
-    return getDirectionVector(DIRECTIONS.LEFT);
-};
-
-BaseOperation.prototype.doRight = function (direction) {
-    // if (direction.x !== 0) return;
-    return getDirectionVector(DIRECTIONS.RIGHT);
-};
-
-const baseOperation = new BaseOperation();
-
-const aSnakeOperation = {
-    ArrowUp: function (direction) {
-        return baseOperation.doUp(direction);
-    },
-    ArrowDown: function (direction) {
-        return baseOperation.doDown(direction);
-    },
-    ArrowLeft: function (direction) {
-        return baseOperation.doLeft(direction);
-    },
-    ArrowRight: function (direction) {
-        return baseOperation.doRight(direction);
-    }
-}
-
-const bSnakeOperation = {
-    KeyW: function (direction) {
-        return baseOperation.doUp(direction);
-    },
-    KeyS: function (direction) {
-        return baseOperation.doDown(direction);
-    },
-    KeyA: function (direction) {
-        return baseOperation.doLeft(direction);
-    },
-    KeyD: function (direction) {
-        return baseOperation.doRight(direction);
-    }
-}
-
 export {
     DIRECTIONS,
-    aSnakeOperation,
-    bSnakeOperation,
     getDirectionVector,
 }

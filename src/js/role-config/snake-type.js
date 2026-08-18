@@ -5,7 +5,6 @@
 // 1 = B Team (紅色)
 
 import {getRandomPosition} from '../common/util.js';
-import {aSnakeOperation, bSnakeOperation} from './snake-operation.js';
 
 const snakeTypeInfo = {
     0: function () {
@@ -15,7 +14,6 @@ const snakeTypeInfo = {
             playerId: 'a-snake',
             initBodyPosition: [getRandomPosition()],
             direction: {x: 0, y: 0},
-            operation: aSnakeOperation,
             snakeStyleName: 'a-snake-body'
         }
     },
@@ -26,7 +24,6 @@ const snakeTypeInfo = {
            playerId: 'b-snake',
            initBodyPosition: [getRandomPosition()],
            direction: {x: 0, y: 0},
-           operation: bSnakeOperation,
            snakeStyleName: 'b-snake-body'
        }
     }
