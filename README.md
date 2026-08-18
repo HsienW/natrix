@@ -30,6 +30,26 @@ click start button
 - [Legacy gameplay baseline](docs/baseline/gameplay-baseline.md)
 - [Performance baseline template](docs/baseline/performance-baseline.md)
 
+## Runtime modernization status
+
+Phase 0 is complete. The current Phase 1 work establishes the PR-03 input boundary without changing the original two-team controls or gameplay rules.
+
+```text
+KeyboardEvent
+    -> KeyboardInput
+    -> bounded InputBuffer
+    -> legacy simulation update
+    -> Snake.changeDirection()
+```
+
+- Browser keyboard codes are translated into logical `CHANGE_DIRECTION` commands.
+- Snake instances no longer own `window` keyboard listeners.
+- Commands remain buffered while paused and are applied by the next simulation update.
+- Restarting a match does not register duplicate keyboard listeners.
+- Fixed-timestep loop infrastructure is present but remains disconnected from gameplay until the planned PR-05 integration.
+
+Phase 1 is not complete yet. The GameState / Simulation boundary, fixed-timestep integration, and explicit runtime lifecycle remain planned for PR-04 through PR-06.
+
 ## Game rule
 ![image](https://user-images.githubusercontent.com/20525933/132933824-1c4b95b5-2d8f-46ab-9996-38121f5935c2.png)
 
