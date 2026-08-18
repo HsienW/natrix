@@ -21,7 +21,8 @@ click start button
 - Run `npm run preview` to serve the production build at `http://127.0.0.1:4173`.
 - Run `npm test` for the baseline test suite.
 - Run `npm run test-coverage` for a coverage report.
-- Run `npm run verify:dev-server` and `npm run verify:preview` for HTTP server smoke checks.
+- Run `npm run verify:dev-server` for the development server smoke check.
+- Run `npm run build` before `npm run verify:preview` for the production preview smoke check.
 
 ## Modernization baseline
 
