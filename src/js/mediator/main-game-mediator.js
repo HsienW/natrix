@@ -5,14 +5,30 @@ import {mainView} from '../main/main-view.js';
 import {mainGameAnimation} from '../main/main-game-animation.js';
 import {mainGameCountdown} from '../main/main-game-countdown.js';
 import {gameStartState, gamePauseState, gameFinishState} from '../main/main-game-state.js';
+import {teamMediator} from './team-mediator.js';
+import {createMainGameRuntime} from '../runtime/main-game-runtime.js';
 
 // mainGameMediator 負責中介管理遊戲進行相關的行為
 // 例如: 初始、進行、暫停、結束等等...
 const mainGameMediator = (function () {
     const operations = {};
+    const runtime = createMainGameRuntime({
+        update: function (stepMs) {
+            mainGameAnimation.animationAction('update');
+
+            if (mainGameCountdown.countdownAction('advance', stepMs)) {
+                operations.gameFinish();
+                teamMediator.callAction('compareTeamTotalScore');
+            }
+        },
+        render: function () {
+            mainGameAnimation.animationAction('render');
+        },
+    });
 
     operations.gameInit = function (countdownFinishNumber) {
         console.log('gameInit');
+        runtime.reset();
         mainGameAnimation.animationAction('isInit');
         mainGameCountdown.countdownAction('countdownInit', countdownFinishNumber);
         mainView.callAction('initCountdownDom');
@@ -21,22 +37,19 @@ const mainGameMediator = (function () {
 
     operations.gameStart = function () {
         console.log('gameStart');
-        mainGameAnimation.animationAction('isStart');
-        mainGameCountdown.countdownAction('isStart');
+        runtime.start();
         mainGame.changeState(gameStartState);
     }
 
     operations.gamePause = function () {
         console.log('gamePause');
-        mainGameAnimation.animationAction('isPause');
-        mainGameCountdown.countdownAction('isPause');
+        runtime.pause();
         mainGame.changeState(gamePauseState);
     }
 
     operations.gameFinish = function () {
         console.log('gameFinish');
-        mainGameAnimation.animationAction('isFinish');
-        mainGameCountdown.countdownAction('isFinish');
+        runtime.finish();
         mainGame.changeState(gameFinishState);
     }
 

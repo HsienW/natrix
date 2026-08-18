@@ -1,70 +1,52 @@
-import {mainGameMediator} from '../mediator/main-game-mediator.js';
-import {teamMediator} from '../mediator/team-mediator.js';
 import {mainView} from './main-view.js';
 
 const mainGameCountdown = (function () {
-    let activation = null;
-    let startTime = null;
-    let finishTime = null;
-    let lastTimeStamp = null;
-    let progress = null;
+    let durationMs = 0;
+    let elapsedMs = 0;
+    let displayedSeconds = null;
+    let finished = false;
     const operations = {};
 
-    operations.countdownLoop = function (timeStamp) {
-        if (!startTime) {
-            startTime = timeStamp;
-        }
-        lastTimeStamp = Math.floor((timeStamp - startTime) / 1000);
-        progress = finishTime - lastTimeStamp;
-        operations.isStart();
-        operations.checkCountdownFinish();
-        mainView.callAction('updateCountdownDom', progress);
-    }
-
     operations.countdownInit = function (countdownFinishNumber) {
-        startTime = null;
-        lastTimeStamp = null;
-        progress = null;
-        finishTime = countdownFinishNumber;
-    }
+        durationMs = countdownFinishNumber * 1000;
+        elapsedMs = 0;
+        displayedSeconds = countdownFinishNumber;
+        finished = false;
+    };
 
-    operations.isStart = function () {
-        activation = requestAnimationFrame(operations.countdownLoop.bind(this));
-    }
-
-    operations.isPause = function () {
-        cancelAnimationFrame(activation);
-    }
-
-    operations.isFinish = function () {
-        cancelAnimationFrame(activation);
-    }
-
-    operations.checkCountdownFinish = function () {
-        if (progress === 0) {
-            console.log('時間到');
-            mainGameMediator.callAction('gameFinish');
-            teamMediator.callAction('compareTeamTotalScore');
+    operations.advance = function (stepMs) {
+        if (finished) {
+            return false;
         }
-    }
+
+        elapsedMs = Math.min(elapsedMs + stepMs, durationMs);
+        const remainingSeconds = Math.ceil((durationMs - elapsedMs) / 1000);
+
+        if (remainingSeconds !== displayedSeconds) {
+            displayedSeconds = remainingSeconds;
+            mainView.callAction('updateCountdownDom', displayedSeconds);
+        }
+
+        finished = elapsedMs >= durationMs;
+        return finished;
+    };
 
     const getData = function () {
-        let action = Array.prototype.shift.call(arguments);
-        return operations[action].apply(this);
-    }
+        const action = Array.prototype.shift.call(arguments);
+        return operations[action].apply(this, arguments);
+    };
 
     const countdownAction = function () {
-        let action = Array.prototype.shift.call(arguments);
-        operations[action].apply(this, arguments);
-    }
+        const action = Array.prototype.shift.call(arguments);
+        return operations[action].apply(this, arguments);
+    };
 
     return {
         getData: getData,
-        countdownAction: countdownAction
-    }
-
+        countdownAction: countdownAction,
+    };
 })();
 
 export {
-    mainGameCountdown
-}
+    mainGameCountdown,
+};

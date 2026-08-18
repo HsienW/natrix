@@ -59,8 +59,8 @@ describe('legacy gameplay smoke', () => {
 
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight'}));
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyD'}));
-        runFrame(1, 102);
-        runFrame(2, 0);
+        runFrame(1, 0);
+        runFrame(2, 102);
 
         const snakes = roleItemMediator.getData('getAllSnake');
         expect(snakes['a-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 1});
@@ -73,11 +73,11 @@ describe('legacy gameplay smoke', () => {
 
         document.querySelector('.pause-button').click();
         expect(mainGame.currentState).toBe(gamePauseState);
-        expect(cancelledFrames).toEqual(new Set([3, 4]));
+        expect(cancelledFrames).toEqual(new Set([3]));
 
         document.querySelector('.start-button').click();
         expect(mainGame.currentState).toBe(gameStartState);
-        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(6);
+        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(4);
 
         document.querySelector('.pause-button').click();
         document.querySelector('.finish-button').click();
