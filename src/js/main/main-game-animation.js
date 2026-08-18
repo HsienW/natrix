@@ -2,6 +2,7 @@
 import {map} from '../role/map.js';
 import {roleItemMediator} from '../mediator/role-item-mediator.js';
 import {teamMediator} from '../mediator/team-mediator.js';
+import {inputBuffer} from '../input/input-buffer.js';
 
 const mainGameAnimation = (function () {
     let activation = null;
@@ -9,7 +10,13 @@ const mainGameAnimation = (function () {
     let lastRenderTime = 2;
     const operations = {};
 
+    operations.consumeInputCommands = function () {
+        const commands = inputBuffer.drain();
+        roleItemMediator.callAction('applyInputCommands', commands);
+    }
+
     operations.updateRoleData = function () {
+        operations.consumeInputCommands();
         roleItemMediator.callAction('updateAllFood');
         roleItemMediator.callAction('updateAllSnakePosition');
     }
