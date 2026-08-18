@@ -12,7 +12,7 @@ const snakeTypeInfo = {
         return {
             snakeSpeed: 1,
             snakeTeam: 'a-team',
-            snakeName: 'a-snake',
+            playerId: 'a-snake',
             initBodyPosition: [getRandomPosition()],
             direction: {x: 0, y: 0},
             operation: aSnakeOperation,
@@ -23,7 +23,7 @@ const snakeTypeInfo = {
        return {
            snakeSpeed: 1,
            snakeTeam: 'b-team',
-           snakeName: 'b-snake',
+           playerId: 'b-snake',
            initBodyPosition: [getRandomPosition()],
            direction: {x: 0, y: 0},
            operation: bSnakeOperation,

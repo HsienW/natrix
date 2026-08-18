@@ -4,13 +4,14 @@ import {roleItemMediator} from '../mediator/role-item-mediator.js';
 import {map} from './map.js';
 import {snakeTypeInfo} from '../role-config/snake-type.js';
 
-const Snake = function (snakeSpeed, snakeTeam, snakeName, initBodyPosition, direction, operation, snakeStyleName) {
+const Snake = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName) {
     this.newSnakeBody = 0;
     // this.snakeWin = false;
     this.snakeDead = false;
     this.snakeSpeed = snakeSpeed;
     this.snakeTeam = snakeTeam;
-    this.snakeName = snakeName;
+    this.playerId = playerId;
+    this.snakeName = playerId;
     this.snakeBody = initBodyPosition;
     this.snakeDirection = direction;
     this.snakeOperation = operation;
@@ -121,8 +122,8 @@ Snake.prototype.renderSnakeItem = function () {
     }
 }
 
-const snakeFactory = function (snakeSpeed, snakeTeam, snakeName, initBodyPosition, direction, operation, snakeStyleName) {
-    let newSnake = new Snake(snakeSpeed, snakeTeam, snakeName, initBodyPosition, direction, operation, snakeStyleName);
+const snakeFactory = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName) {
+    let newSnake = new Snake(snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName);
     roleItemMediator.callAction('addSnake', newSnake);
 }
 
@@ -134,7 +135,7 @@ const initSnakes = function () {
         snakeFactory(
             initSnake.snakeSpeed,
             initSnake.snakeTeam,
-            initSnake.snakeName,
+            initSnake.playerId,
             initSnake.initBodyPosition,
             initSnake.direction,
             initSnake.operation,

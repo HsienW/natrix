@@ -1,12 +1,7 @@
+import {DIRECTIONS} from '../role-config/snake-operation.js';
+
 const COMMAND_TYPES = Object.freeze({
     CHANGE_DIRECTION: 'CHANGE_DIRECTION',
-});
-
-const DIRECTIONS = Object.freeze({
-    UP: 'UP',
-    DOWN: 'DOWN',
-    LEFT: 'LEFT',
-    RIGHT: 'RIGHT',
 });
 
 const KEYBOARD_COMMANDS = Object.freeze({
