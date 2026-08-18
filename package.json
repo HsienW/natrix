@@ -1,5 +1,5 @@
 {
-  "name": "vanilla-js-snake-game",
+  "name": "natrix",
   "version": "1.0.0",
   "description": "A framework-free, local two-player Snake game.",
   "main": "index.js",
