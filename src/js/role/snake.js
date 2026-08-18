@@ -3,6 +3,7 @@ import {snakeDeadRuleChecker} from '../checker/checker.js';
 import {roleItemMediator} from '../mediator/role-item-mediator.js';
 import {map} from './map.js';
 import {snakeTypeInfo} from '../role-config/snake-type.js';
+import {getDirectionVector} from '../role-config/snake-operation.js';
 
 const Snake = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, operation, snakeStyleName) {
     this.newSnakeBody = 0;
@@ -51,6 +52,21 @@ Snake.prototype.getSnakeDead = function () {
 
 Snake.prototype.getSnakeTeam = function () {
     return this.snakeTeam;
+}
+
+Snake.prototype.getPlayerId = function () {
+    return this.playerId;
+}
+
+Snake.prototype.changeDirection = function (direction) {
+    const nextDirection = getDirectionVector(direction);
+
+    if (!nextDirection) {
+        return false;
+    }
+
+    this.snakeDirection = nextDirection;
+    return true;
 }
 
 // Snake.prototype.snakeTeamWin = function () {
