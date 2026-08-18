@@ -43,6 +43,8 @@ describe('legacy gameplay fixtures', () => {
 
         expect(blueSnake.snakeTeam).toBe(legacyBaseline.teams.blue.id);
         expect(redSnake.snakeTeam).toBe(legacyBaseline.teams.red.id);
+        expect(blueSnake.playerId).toBe('a-snake');
+        expect(redSnake.playerId).toBe('b-snake');
         expect(getKeyboardCodesForPlayer(blueSnake.playerId)).toEqual(legacyBaseline.teams.blue.controls);
         expect(getKeyboardCodesForPlayer(redSnake.playerId)).toEqual(legacyBaseline.teams.red.controls);
         expect(blueSnake.direction).toEqual({x: 0, y: 0});
