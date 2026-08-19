@@ -114,7 +114,7 @@ describe('simulation boundary', () => {
     test('multiple steps accumulate correctly', () => {
         const simulation = createSimulation(
             {},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {random: makeRandom([0, 0, 0.5, 0.5, 0, 0, 0, 0])},
         );
 
         simulation.step([

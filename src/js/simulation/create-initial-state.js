@@ -8,18 +8,8 @@ const DEFAULT_CONFIG = {
 };
 
 const SNAKE_DEFINITIONS = [
-    {
-        id: 'a-snake',
-        team: 'a-team',
-        style: 'a-snake-body',
-        initPosition: {x: 1, y: 1},
-    },
-    {
-        id: 'b-snake',
-        team: 'b-team',
-        style: 'b-snake-body',
-        initPosition: {x: 41, y: 41},
-    },
+    {id: 'a-snake', team: 'a-team', style: 'a-snake-body'},
+    {id: 'b-snake', team: 'b-team', style: 'b-snake-body'},
 ];
 
 const FOOD_TYPE_KEYS = Object.keys(FOOD_TYPE_CONFIG);
@@ -47,13 +37,16 @@ const createInitialFood = function (randomFn, mapSize) {
     return food;
 };
 
-const createInitialSnakes = function () {
+const createInitialSnakes = function (randomFn, mapSize) {
     return SNAKE_DEFINITIONS.map((def) => ({
         id: def.id,
         team: def.team,
         alive: true,
         direction: {x: 0, y: 0},
-        body: [{x: def.initPosition.x, y: def.initPosition.y}],
+        body: [{
+            x: Math.floor(randomFn() * mapSize) + 1,
+            y: Math.floor(randomFn() * mapSize) + 1,
+        }],
         pendingGrowth: 0,
         style: def.style,
     }));
@@ -72,7 +65,7 @@ const createInitialGameState = function (config, environment) {
             durationTicks: mergedConfig.durationTicks,
         },
         remainingTicks: mergedConfig.durationTicks,
-        snakes: createInitialSnakes(),
+        snakes: createInitialSnakes(randomFn, mergedConfig.mapSize),
         food: createInitialFood(randomFn, mergedConfig.mapSize),
         scores: createEmptyScores(),
         finished: false,
