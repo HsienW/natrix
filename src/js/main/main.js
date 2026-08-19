@@ -1,6 +1,5 @@
 /** State Pattern **/
 
-import {gameFinishState} from './main-game-state.js';
 import {mainView} from './main-view.js';
 import {keyboardInput} from '../input/keyboard-input.js';
 import {inputBuffer} from '../input/input-buffer.js';
@@ -15,7 +14,7 @@ const Main = function () {
     this.pauseButton = null;
     this.finishButton = null;
     // 設定初始狀態
-    this.currentState = gameFinishState;
+    this.currentState = null;
 }
 
 Main.prototype.changeState = function (newState) {
@@ -26,7 +25,6 @@ Main.prototype.initMainGameView = function () {
     mainView.callAction('initControlButtonsDom');
     mainView.callAction('initCountdownDom');
     mainView.callAction('initTeamScoreDom');
-    mainView.callAction('bindControlButtonEvent');
 }
 
 const mainGame = new Main();
@@ -84,6 +82,26 @@ const gameRuntime = new GameRuntime({
 });
 
 mainGame.initMainGameView();
+
+mainGame.startButton.onclick = function () {
+    if (gameRuntime.getLifecycleState() === 'PAUSED') {
+        gameRuntime.dispatch('RESUME');
+        return;
+    }
+    gameRuntime.reset();
+    mainView.callAction('initCountdownDom');
+    mainView.callAction('initTeamScoreDom');
+    gameRuntime.dispatch('START');
+};
+
+mainGame.pauseButton.onclick = function () {
+    gameRuntime.dispatch('PAUSE');
+};
+
+mainGame.finishButton.onclick = function () {
+    gameRuntime.dispatch('FINISH');
+};
+
 keyboardInput.start();
 
 export {
