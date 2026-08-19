@@ -9,7 +9,6 @@ const DEFAULT_RENDER = function () {};
 class GameRuntime {
     constructor({
         config,
-        environment,
         inputBuffer,
         renderCallback = DEFAULT_RENDER,
         stepMs,
@@ -20,22 +19,18 @@ class GameRuntime {
         if (!config) {
             throw new TypeError('GameRuntime requires a config.');
         }
-        if (!environment || typeof environment.random !== 'function') {
-            throw new TypeError('GameRuntime requires an environment with a random function.');
-        }
         if (!inputBuffer || typeof inputBuffer.drain !== 'function') {
             throw new TypeError('GameRuntime requires an input buffer.');
         }
 
         this.config = config;
-        this.environment = environment;
         this.inputBuffer = inputBuffer;
         this.renderCallback = renderCallback;
         this.eventLog = [];
         this.currentAlpha = 0;
         this.lifecycleListeners = [];
 
-        this.simulation = createSimulation(config, environment);
+        this.simulation = createSimulation(config);
         this.currentSnapshot = this.simulation.snapshot();
 
         this.machine = new RuntimeStateMachine();
@@ -132,7 +127,7 @@ class GameRuntime {
     reset() {
         this.loop.stop();
         this.inputBuffer.clear();
-        this.simulation.reset(this.config, this.environment);
+        this.simulation.reset(this.config);
         this.machine.reset();
         this.eventLog = [];
         this.currentAlpha = 0;

@@ -2,12 +2,12 @@ import {createInitialGameState} from './create-initial-state.js';
 import {stepGame} from './step-game.js';
 import {createSnapshot} from '../state/snapshot.js';
 
-const createSimulation = function (config, environment) {
-    let currentState = createInitialGameState(config, environment);
+const createSimulation = function (config) {
+    let currentState = createInitialGameState(config);
 
     return {
         step(commands) {
-            const result = stepGame(currentState, commands, environment);
+            const result = stepGame(currentState, commands);
             currentState = result.state;
             return result;
         },
@@ -17,11 +17,8 @@ const createSimulation = function (config, environment) {
         getState() {
             return currentState;
         },
-        reset(newConfig, newEnvironment) {
-            currentState = createInitialGameState(
-                newConfig || config,
-                newEnvironment || environment,
-            );
+        reset(newConfig) {
+            currentState = createInitialGameState(newConfig || config);
         },
     };
 };

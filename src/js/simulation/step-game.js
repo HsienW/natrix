@@ -4,7 +4,7 @@ import {moveAllSnakes} from './movement.js';
 import {checkDeaths} from './collision.js';
 import {checkSurvivingTeam, checkTimeExpiry} from './finish-rules.js';
 
-const stepGame = function (previousState, commands, environment) {
+const stepGame = function (previousState, commands) {
     if (previousState.finished) {
         return {state: previousState, events: []};
     }
@@ -14,12 +14,13 @@ const stepGame = function (previousState, commands, environment) {
 
     state = applyCommands(state, commands);
 
-    const scoringResult = resolveScoring(state, environment);
+    const scoringResult = resolveScoring(state);
     state = {
         ...state,
         snakes: scoringResult.snakes,
         food: scoringResult.food,
         scores: scoringResult.scores,
+        rngState: scoringResult.rngState,
     };
     events.push(...scoringResult.events);
 

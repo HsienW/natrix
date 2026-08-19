@@ -75,8 +75,7 @@ const renderFromSnapshot = function (snapshot) {
 };
 
 const gameRuntime = new GameRuntime({
-    config: {mapSize: 41, tickRate: 10, durationTicks: 600},
-    environment: {random: Math.random},
+    config: {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0},
     inputBuffer: inputBuffer,
     renderCallback: renderFromSnapshot,
 });

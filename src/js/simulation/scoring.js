@@ -1,14 +1,35 @@
+import {generateRandomValue} from './rng.js';
+
 const FOOD_TYPE_CONFIG = {
     'general-expand': {bodyGrowth: 1, style: 'general-expand-food'},
     'mega-expand': {bodyGrowth: 2, style: 'mega-expand-food'},
 };
 
-const resolveScoring = function (state, environment) {
-    const events = [];
-    let scores = {...state.scores};
-    let foodUpdated = false;
-    const newFood = state.food.map((foodItem) => {
-        const eatingSnakes = state.snakes.filter((snake) => {
+const relocateFood = function (foodItem, rngState, mapSize) {
+    var xResult = generateRandomValue(rngState);
+    var yResult = generateRandomValue(xResult.nextState);
+
+    return {
+        food: {
+            ...foodItem,
+            position: {
+                x: Math.floor(xResult.value * mapSize) + 1,
+                y: Math.floor(yResult.value * mapSize) + 1,
+            },
+        },
+        nextState: yResult.nextState,
+    };
+};
+
+const resolveScoring = function (state) {
+    var events = [];
+    var scores = {...state.scores};
+    var foodUpdated = false;
+    var rngState = state.rngState;
+    var mapSize = state.config.mapSize;
+
+    var newFood = state.food.map(function (foodItem) {
+        var eatingSnakes = state.snakes.filter(function (snake) {
             return snake.alive
                 && snake.body.length > 0
                 && snake.body[0].x === foodItem.position.x
@@ -21,7 +42,7 @@ const resolveScoring = function (state, environment) {
 
         foodUpdated = true;
 
-        eatingSnakes.forEach((snake) => {
+        eatingSnakes.forEach(function (snake) {
             scores[snake.team] = (scores[snake.team] || 0) + foodItem.bodyGrowth;
             events.push({
                 type: 'FOOD_EATEN',
@@ -32,29 +53,29 @@ const resolveScoring = function (state, environment) {
             });
         });
 
-        return {
-            ...foodItem,
-            position: {
-                x: Math.floor(environment.random() * state.config.mapSize) + 1,
-                y: Math.floor(environment.random() * state.config.mapSize) + 1,
-            },
-        };
+        var relocation = relocateFood(foodItem, rngState, mapSize);
+        rngState = relocation.nextState;
+
+        return relocation.food;
     });
 
     return {
-        snakes: state.snakes.map((snake) => {
-            const eatenForSnake = events.filter(
-                (event) => event.type === 'FOOD_EATEN' && event.playerId === snake.id,
+        snakes: state.snakes.map(function (snake) {
+            var eatenForSnake = events.filter(
+                function (event) { return event.type === 'FOOD_EATEN' && event.playerId === snake.id; },
             );
             if (eatenForSnake.length === 0) {
                 return snake;
             }
-            const totalGrowth = eatenForSnake.reduce((sum, event) => sum + event.bodyGrowth, 0);
+            var totalGrowth = eatenForSnake.reduce(function (sum, event) {
+                return sum + event.bodyGrowth;
+            }, 0);
             return {...snake, pendingGrowth: snake.pendingGrowth + totalGrowth};
         }),
         food: foodUpdated ? newFood : state.food,
-        scores,
-        events,
+        scores: scores,
+        rngState: rngState,
+        events: events,
     };
 };
 
