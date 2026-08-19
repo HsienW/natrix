@@ -3,24 +3,13 @@
 const {createSimulation} = require('../../src/js/simulation/simulation.js');
 const {createSnapshot} = require('../../src/js/state/snapshot.js');
 
-const makeRandom = function (values) {
-    let index = 0;
-    return () => {
-        if (index >= values.length) {
-            return 0;
-        }
-        return values[index++];
-    };
-};
-
 describe('simulation boundary', () => {
     test('runs in Node environment without JSDOM', () => {
         expect(typeof document).toBe('undefined');
         expect(typeof window).toBe('undefined');
 
         const simulation = createSimulation(
-            {mapSize: 41, tickRate: 10, durationTicks: 600},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0},
         );
 
         const snapshot = simulation.snapshot();
@@ -31,8 +20,7 @@ describe('simulation boundary', () => {
 
     test('step advances tick and returns events', () => {
         const simulation = createSimulation(
-            {},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {seed: 0},
         );
 
         const result = simulation.step([
@@ -45,8 +33,7 @@ describe('simulation boundary', () => {
 
     test('snapshot projects read-only view without DOM references', () => {
         const simulation = createSimulation(
-            {},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {seed: 0},
         );
 
         const snapshot = simulation.snapshot();
@@ -72,8 +59,7 @@ describe('simulation boundary', () => {
 
     test('snapshot does not contain mutable references to authoritative state', () => {
         const simulation = createSimulation(
-            {},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {seed: 0},
         );
 
         const snapshotA = simulation.snapshot();
@@ -86,8 +72,7 @@ describe('simulation boundary', () => {
 
     test('reset creates a fresh initial state', () => {
         const simulation = createSimulation(
-            {},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {seed: 0},
         );
 
         simulation.step([
@@ -95,14 +80,13 @@ describe('simulation boundary', () => {
         ]);
         expect(simulation.getState().tick).toBe(1);
 
-        simulation.reset({}, {random: makeRandom([0, 0, 0, 0, 0])});
+        simulation.reset({seed: 0});
         expect(simulation.getState().tick).toBe(0);
     });
 
     test('getState returns current authoritative state', () => {
         const simulation = createSimulation(
-            {},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {seed: 0},
         );
 
         const state = simulation.getState();
@@ -113,8 +97,7 @@ describe('simulation boundary', () => {
 
     test('multiple steps accumulate correctly', () => {
         const simulation = createSimulation(
-            {},
-            {random: makeRandom([0, 0, 0.5, 0.5, 0, 0, 0, 0])},
+            {seed: 0},
         );
 
         simulation.step([
@@ -128,7 +111,7 @@ describe('simulation boundary', () => {
         expect(state.remainingTicks).toBe(597);
 
         const aSnake = state.snakes.find((s) => s.id === 'a-snake');
-        expect(aSnake.body[0].x).toBe(4);
+        expect(aSnake.body[0].x).toBe(14);
     });
 
     test('createSnapshot can be called independently without simulation facade', () => {

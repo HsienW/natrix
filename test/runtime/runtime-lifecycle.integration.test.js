@@ -1,11 +1,7 @@
 const {GameRuntime} = require('../../src/js/runtime/game-runtime.js');
 const {InputBuffer} = require('../../src/js/input/input-buffer.js');
 
-const makeRandom = function () {
-    return () => 0;
-};
-
-const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600};
+const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 
 const createRuntime = function () {
     const frames = [];
@@ -13,7 +9,6 @@ const createRuntime = function () {
 
     const runtime = new GameRuntime({
         config: defaultConfig,
-        environment: {random: makeRandom()},
         inputBuffer: new InputBuffer(),
         renderCallback: () => {},
         stepMs: 100,

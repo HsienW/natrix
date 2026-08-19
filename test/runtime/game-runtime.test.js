@@ -1,20 +1,9 @@
 const {GameRuntime} = require('../../src/js/runtime/game-runtime.js');
 const {InputBuffer} = require('../../src/js/input/input-buffer.js');
 
-const makeRandom = function (values) {
-    let index = 0;
-    return () => {
-        if (index >= values.length) {
-            return 0;
-        }
-        return values[index++];
-    };
-};
-
-const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600};
+const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 
 const createRuntime = function (overrides = {}) {
-    const randomFn = overrides.random || makeRandom([0, 0, 0, 0, 0]);
     const buffer = overrides.inputBuffer || new InputBuffer();
     const renderCallback = overrides.renderCallback || jest.fn();
     const frames = [];
@@ -34,7 +23,6 @@ const createRuntime = function (overrides = {}) {
 
     const runtime = new GameRuntime({
         config: overrides.config || defaultConfig,
-        environment: {random: randomFn},
         inputBuffer: buffer,
         renderCallback,
         stepMs: overrides.stepMs || 100,
@@ -226,11 +214,14 @@ describe('GameRuntime', () => {
     });
 
     test('event log collects domain events from simulation steps', () => {
-        const {runtime, buffer, frames} = createRuntime();
+        const {runtime, buffer} = createRuntime();
+
+        // Place snake directly on food so a FOOD_EATEN event fires
+        const state = runtime.getState();
+        state.snakes[0].body[0] = {x: state.food[0].position.x, y: state.food[0].position.y};
 
         buffer.push({type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'});
-        startAndInit(runtime, frames);
-        runNextFrame(frames, 150);
+        runtime.handleUpdate();
 
         const events = runtime.getEventLog();
         expect(events.some((e) => e.type === 'FOOD_EATEN')).toBe(true);
@@ -247,15 +238,6 @@ describe('GameRuntime', () => {
 
     test('throws when config is missing', () => {
         expect(() => new GameRuntime({
-            environment: {random: () => 0},
-            inputBuffer: new InputBuffer(),
-        })).toThrow(TypeError);
-    });
-
-    test('throws when environment.random is missing', () => {
-        expect(() => new GameRuntime({
-            config: defaultConfig,
-            environment: {},
             inputBuffer: new InputBuffer(),
         })).toThrow(TypeError);
     });
@@ -263,7 +245,6 @@ describe('GameRuntime', () => {
     test('throws when inputBuffer is missing', () => {
         expect(() => new GameRuntime({
             config: defaultConfig,
-            environment: {random: () => 0},
         })).toThrow(TypeError);
     });
 });

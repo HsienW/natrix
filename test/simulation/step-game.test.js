@@ -1,15 +1,4 @@
 const {stepGame} = require('../../src/js/simulation/step-game.js');
-const {createInitialGameState} = require('../../src/js/simulation/create-initial-state.js');
-
-const makeRandom = function (values) {
-    let index = 0;
-    return () => {
-        if (index >= values.length) {
-            return 0;
-        }
-        return values[index++];
-    };
-};
 
 const createTestState = function (overrides) {
     const base = {
@@ -50,7 +39,7 @@ const createTestState = function (overrides) {
         finished: false,
         winner: null,
         finishReason: null,
-        rngState: null,
+        rngState: 0,
     };
 
     if (!overrides) {
@@ -60,12 +49,10 @@ const createTestState = function (overrides) {
     return {...base, ...overrides};
 };
 
-const testEnvironment = {random: makeRandom([0.5, 0.5])};
-
 describe('stepGame', () => {
     test('advances exactly one tick per call', () => {
         const state = createTestState();
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         expect(result.state.tick).toBe(1);
         expect(result.state.remainingTicks).toBe(599);
@@ -77,7 +64,7 @@ describe('stepGame', () => {
 
         stepGame(state, [
             {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'},
-        ], testEnvironment);
+        ]);
 
         expect(state).toEqual(snapshot);
     });
@@ -87,7 +74,7 @@ describe('stepGame', () => {
         const command = {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'};
         const commandSnapshot = {...command};
 
-        stepGame(state, [command], testEnvironment);
+        stepGame(state, [command]);
 
         expect(command).toEqual(commandSnapshot);
     });
@@ -99,7 +86,7 @@ describe('stepGame', () => {
             {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'DOWN'},
         ];
 
-        const result = stepGame(state, commands, testEnvironment);
+        const result = stepGame(state, commands);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.direction).toEqual({x: 0, y: 1});
@@ -112,7 +99,7 @@ describe('stepGame', () => {
             {type: 'CHANGE_DIRECTION', playerId: 'unknown', direction: 'LEFT'},
         ];
 
-        const result = stepGame(state, commands, testEnvironment);
+        const result = stepGame(state, commands);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.direction).toEqual({x: 0, y: 0});
@@ -124,7 +111,7 @@ describe('stepGame', () => {
             {type: 'UNKNOWN_ACTION', playerId: 'a-snake', direction: 'LEFT'},
         ];
 
-        const result = stepGame(state, commands, testEnvironment);
+        const result = stepGame(state, commands);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.direction).toEqual({x: 0, y: 0});
@@ -132,7 +119,7 @@ describe('stepGame', () => {
 
     test('moves snake in stationary direction when no command given', () => {
         const state = createTestState();
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
         expect(aSnake.body[0]).toEqual({x: 5, y: 5});
@@ -162,7 +149,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.body[0]).toEqual({x: 6, y: 5});
@@ -192,7 +179,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.body).toHaveLength(3);
@@ -226,7 +213,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         expect(result.state.scores['a-team']).toBe(1);
         expect(result.events.some((e) => e.type === 'FOOD_EATEN' && e.playerId === 'a-snake')).toBe(true);
@@ -260,7 +247,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         expect(result.state.scores['a-team']).toBe(1);
         expect(result.state.scores['b-team']).toBe(1);
@@ -293,7 +280,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const food = result.state.food[0];
 
         expect(food.position).not.toEqual({x: 10, y: 10});
@@ -323,7 +310,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.alive).toBe(false);
@@ -359,7 +346,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.alive).toBe(false);
@@ -390,7 +377,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         expect(result.state.finished).toBe(true);
         expect(result.state.winner).toBe('b-team');
@@ -422,7 +409,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const deathEvents = result.events.filter((e) => e.type === 'SNAKE_DIED');
 
         expect(deathEvents).toHaveLength(2);
@@ -436,7 +423,7 @@ describe('stepGame', () => {
             scores: {'a-team': 5, 'b-team': 3},
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         expect(result.state.finished).toBe(true);
         expect(result.state.winner).toBe('a-team');
@@ -449,7 +436,7 @@ describe('stepGame', () => {
             scores: {'a-team': 3, 'b-team': 3},
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
 
         expect(result.state.finished).toBe(true);
         expect(result.state.winner).toBeNull();
@@ -466,7 +453,7 @@ describe('stepGame', () => {
 
         const result = stepGame(state, [
             {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'},
-        ], testEnvironment);
+        ]);
 
         expect(result.state).toBe(state);
         expect(result.events).toEqual([]);
@@ -475,10 +462,10 @@ describe('stepGame', () => {
     test('decrements remainingTicks each step', () => {
         const state = createTestState({remainingTicks: 5});
 
-        const result1 = stepGame(state, [], testEnvironment);
+        const result1 = stepGame(state, []);
         expect(result1.state.remainingTicks).toBe(4);
 
-        const result2 = stepGame(result1.state, [], testEnvironment);
+        const result2 = stepGame(result1.state, []);
         expect(result2.state.remainingTicks).toBe(3);
     });
 
@@ -515,7 +502,7 @@ describe('stepGame', () => {
             ],
         });
 
-        const result = stepGame(state, [], testEnvironment);
+        const result = stepGame(state, []);
         const aSnake = result.state.snakes.find((s) => s.id === 'a-snake');
 
         expect(aSnake.body).toHaveLength(3);

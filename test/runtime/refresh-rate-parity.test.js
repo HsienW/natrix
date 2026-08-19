@@ -1,17 +1,15 @@
 const {GameRuntime} = require('../../src/js/runtime/game-runtime.js');
 const {InputBuffer} = require('../../src/js/input/input-buffer.js');
 
-const config = {mapSize: 41, tickRate: 10, durationTicks: 600};
+const config = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 
 const runSequence = function (frameDeltas) {
     const buffer = new InputBuffer();
-    const randomFn = () => 0;
     let timestamp = 0;
     let pendingCallback = null;
 
     const runtime = new GameRuntime({
         config,
-        environment: {random: randomFn},
         inputBuffer: buffer,
         renderCallback: () => {},
         stepMs: 100,
