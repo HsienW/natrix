@@ -1,7 +1,11 @@
+/** Mediator Pattern **/
+
 import {mainGame, gameRuntime} from '../main/main.js';
 import {mainView} from '../main/main-view.js';
 import {gameStartState, gamePauseState, gameFinishState} from '../main/main-game-state.js';
 
+// mainGameMediator 負責中介管理遊戲進行相關的行為
+// 例如: 初始、進行、暫停、結束等等...
 const mainGameMediator = (function () {
     const operations = {};
 
@@ -30,6 +34,7 @@ const mainGameMediator = (function () {
         mainGame.changeState(gameFinishState);
     }
 
+    //處理呼叫參數的介面
     const callAction = function () {
         let action = Array.prototype.shift.call(arguments);
         operations[action].apply(this, arguments);
