@@ -1,6 +1,8 @@
 import {FixedTimestepLoop} from './fixed-timestep-loop.js';
 import {createSimulation} from '../simulation/simulation.js';
 import {InputBuffer} from '../input/input-buffer.js';
+import {RuntimeStateMachine} from './runtime-state-machine.js';
+import {RUNTIME_STATES, RUNTIME_ACTIONS} from './runtime-state.js';
 
 const DEFAULT_RENDER = function () {};
 
@@ -31,9 +33,12 @@ class GameRuntime {
         this.renderCallback = renderCallback;
         this.eventLog = [];
         this.currentAlpha = 0;
+        this.lifecycleListeners = [];
 
         this.simulation = createSimulation(config, environment);
         this.currentSnapshot = this.simulation.snapshot();
+
+        this.machine = new RuntimeStateMachine();
 
         const loopOptions = {
             update: (stepMsValue) => this.handleUpdate(stepMsValue),
@@ -53,6 +58,57 @@ class GameRuntime {
         }
 
         this.loop = new FixedTimestepLoop(loopOptions);
+    }
+
+    dispatch(action) {
+        if (action === RUNTIME_ACTIONS.START
+            && this.machine.getState() === RUNTIME_STATES.FINISHED) {
+            this.reset();
+        }
+
+        const result = this.machine.dispatch(action);
+        if (!result.ok) {
+            return result;
+        }
+
+        this.executeAction(action);
+        this.notifyLifecycleListeners(result);
+
+        return result;
+    }
+
+    executeAction(action) {
+        switch (action) {
+        case RUNTIME_ACTIONS.START:
+            this.loop.start();
+            break;
+        case RUNTIME_ACTIONS.PAUSE:
+            this.loop.pause();
+            break;
+        case RUNTIME_ACTIONS.RESUME:
+            this.loop.start();
+            break;
+        case RUNTIME_ACTIONS.FINISH:
+            this.loop.stop();
+            break;
+        case RUNTIME_ACTIONS.RESET:
+            this.reset();
+            break;
+        }
+    }
+
+    onLifecycleChange(listener) {
+        this.lifecycleListeners.push(listener);
+    }
+
+    notifyLifecycleListeners(transitionResult) {
+        for (const listener of this.lifecycleListeners) {
+            listener(transitionResult);
+        }
+    }
+
+    getLifecycleState() {
+        return this.machine.getState();
     }
 
     start() {
@@ -77,6 +133,7 @@ class GameRuntime {
         this.loop.stop();
         this.inputBuffer.clear();
         this.simulation.reset(this.config, this.environment);
+        this.machine.reset();
         this.eventLog = [];
         this.currentAlpha = 0;
         this.currentSnapshot = this.simulation.snapshot();

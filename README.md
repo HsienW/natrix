@@ -32,23 +32,67 @@ click start button
 
 ## Runtime modernization status
 
-Phase 0 is complete. The current Phase 1 work establishes the PR-03 input boundary without changing the original two-team controls or gameplay rules.
+Phase 0 is complete. Phase 1 (M1) is complete through PR-06.
+
+### Input boundary (PR-03)
 
 ```text
 KeyboardEvent
     -> KeyboardInput
     -> bounded InputBuffer
-    -> legacy simulation update
-    -> Snake.changeDirection()
+    -> simulation step drains commands
+    -> applyCommands changes snake direction
 ```
 
 - Browser keyboard codes are translated into logical `CHANGE_DIRECTION` commands.
-- Snake instances no longer own `window` keyboard listeners.
-- Commands remain buffered while paused and are applied by the next simulation update.
+- `KeyboardInput` is the sole production owner of the `keydown` listener.
+- Commands remain buffered while paused and are applied by the next simulation step.
 - Restarting a match does not register duplicate keyboard listeners.
-- Fixed-timestep loop infrastructure is present but remains disconnected from gameplay until the planned PR-05 integration.
 
-Phase 1 is not complete yet. The GameState / Simulation boundary, fixed-timestep integration, and explicit runtime lifecycle remain planned for PR-04 through PR-06.
+### Simulation boundary (PR-04)
+
+```text
+Browser input / controls
+    -> commands
+Runtime / clock
+    -> simulation step
+Simulation
+    -> GameState + events
+Snapshot projection
+    -> Renderer
+Renderer / HUD
+    -> DOM only
+```
+
+- `stepGame(state, commands, environment)` is a pure function with no DOM, rAF, or timer dependency.
+- GameState is serializable plain data with `{x, y}` integer grid positions.
+- `simulation/` and `state/` contain no browser globals or DOM imports.
+- Rendering can be omitted entirely while movement, food, score, death, and finish still work.
+
+### Fixed-timestep loop (PR-05)
+
+- One accumulator-based `FixedTimestepLoop` drives the simulation at 10 Hz.
+- Display refresh rate (60/120/144 Hz) does not change authoritative simulation speed.
+- Input commands are drained once per logical simulation step, not per render frame.
+- The legacy dual-rAF animation and countdown loops have been removed.
+
+### Explicit lifecycle (PR-06)
+
+```text
+IDLE --START--> RUNNING --PAUSE--> PAUSED --RESUME--> RUNNING
+                  |                    |
+                  FINISH               FINISH
+                  v                    v
+               FINISHED --RESET--> IDLE
+```
+
+- A `RuntimeStateMachine` enforces valid transitions with structured results.
+- Invalid transitions return `INVALID_RUNTIME_TRANSITION` with no side effect.
+- Duplicate START while running schedules no second rAF.
+- Paused elapsed wall time is not added on resume.
+- Lifecycle listeners are notified on each successful transition.
+
+M2 (seeded RNG, command recording, replay, state-hash suite) remains planned for PR-07 through PR-10.
 
 ## Game rule
 ![image](https://user-images.githubusercontent.com/20525933/132933824-1c4b95b5-2d8f-46ab-9996-38121f5935c2.png)

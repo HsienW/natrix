@@ -2,7 +2,6 @@
 
 import {mainGame, gameRuntime} from '../main/main.js';
 import {mainView} from '../main/main-view.js';
-import {gameStartState, gamePauseState, gameFinishState} from '../main/main-game-state.js';
 
 // mainGameMediator 負責中介管理遊戲進行相關的行為
 // 例如: 初始、進行、暫停、結束等等...
@@ -18,20 +17,17 @@ const mainGameMediator = (function () {
 
     operations.gameStart = function () {
         console.log('gameStart');
-        gameRuntime.start();
-        mainGame.changeState(gameStartState);
+        gameRuntime.dispatch('START');
     }
 
     operations.gamePause = function () {
         console.log('gamePause');
-        gameRuntime.pause();
-        mainGame.changeState(gamePauseState);
+        gameRuntime.dispatch('PAUSE');
     }
 
     operations.gameFinish = function () {
         console.log('gameFinish');
-        gameRuntime.stop();
-        mainGame.changeState(gameFinishState);
+        gameRuntime.dispatch('FINISH');
     }
 
     //處理呼叫參數的介面

@@ -49,15 +49,15 @@ describe('gameplay smoke', () => {
         });
         const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
 
-        const {mainGame, gameRuntime} = require('../../src/js/main/main.js');
-        const {gameStartState, gamePauseState, gameFinishState} = require('../../src/js/main/main-game-state.js');
+        const {gameRuntime} = require('../../src/js/main/main.js');
 
         expect(document.querySelector('.game-countdown').textContent).toBe('60');
         expect(document.querySelector('.a-team').textContent).toBe('0');
         expect(document.querySelector('.b-team').textContent).toBe('0');
+        expect(gameRuntime.getLifecycleState()).toBe('IDLE');
 
         document.querySelector('.start-button').click();
-        expect(mainGame.currentState).toBe(gameStartState);
+        expect(gameRuntime.getLifecycleState()).toBe('RUNNING');
         expect(gameRuntime.isRunning()).toBe(true);
 
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight'}));
@@ -89,7 +89,7 @@ describe('gameplay smoke', () => {
         expect(document.querySelectorAll('.general-expand-food')).toHaveLength(1);
 
         document.querySelector('.pause-button').click();
-        expect(mainGame.currentState).toBe(gamePauseState);
+        expect(gameRuntime.getLifecycleState()).toBe('PAUSED');
         expect(gameRuntime.isRunning()).toBe(false);
 
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowDown'}));
@@ -99,7 +99,7 @@ describe('gameplay smoke', () => {
         expect(aSnakePaused.body[0]).toEqual({x: 2, y: 1});
 
         document.querySelector('.start-button').click();
-        expect(mainGame.currentState).toBe(gameStartState);
+        expect(gameRuntime.getLifecycleState()).toBe('RUNNING');
         expect(gameRuntime.isRunning()).toBe(true);
 
         const resumeInitFrame = popFrame(scheduledFrames);
@@ -114,9 +114,11 @@ describe('gameplay smoke', () => {
 
         document.querySelector('.pause-button').click();
         document.querySelector('.finish-button').click();
-        expect(mainGame.currentState).toBe(gameFinishState);
+        expect(gameRuntime.getLifecycleState()).toBe('FINISHED');
 
         document.querySelector('.start-button').click();
+        expect(gameRuntime.getLifecycleState()).toBe('RUNNING');
+
         const keydownRegistrations = addEventListenerSpy.mock.calls.filter(([eventName]) => {
             return eventName === 'keydown';
         });
