@@ -55,7 +55,7 @@ describe('createInitialGameState', () => {
         expect(red.team).toBe('b-team');
         expect(red.alive).toBe(true);
         expect(red.direction).toEqual({x: 0, y: 0});
-        expect(red.body).toEqual([{x: 41, y: 41}]);
+        expect(red.body).toEqual([{x: 1, y: 1}]);
         expect(red.pendingGrowth).toBe(0);
         expect(red.style).toBe('b-snake-body');
     });
@@ -65,13 +65,14 @@ describe('createInitialGameState', () => {
         expect(zeroState.food.length).toBeGreaterThanOrEqual(1);
         expect(zeroState.food.length).toBeLessThanOrEqual(4);
 
-        const maxState = createInitialGameState({}, {random: makeRandom([0.99, 0, 0, 0, 0])});
+        const maxState = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0.99, 0, 0, 0])});
         expect(maxState.food.length).toBe(4);
     });
 
     test('assigns food types from general-expand and mega-expand', () => {
         const state = createInitialGameState({}, {
             random: makeRandom([
+                0, 0, 0, 0, // snake positions (2 values per snake)
                 0,    // food count → 1
                 0,    // food type index → 0 (general-expand)
                 0, 0, // food position
@@ -87,6 +88,7 @@ describe('createInitialGameState', () => {
     test('creates food with mega-expand type when selected', () => {
         const state = createInitialGameState({}, {
             random: makeRandom([
+                0, 0, 0, 0, // snake positions (2 values per snake)
                 0,    // food count → 1
                 0.5,  // food type index → floor(0.5 * 2) = 1 (mega-expand)
                 0, 0, // food position
@@ -101,6 +103,7 @@ describe('createInitialGameState', () => {
     test('creates food positions within map bounds', () => {
         const state = createInitialGameState({}, {
             random: makeRandom([
+                0, 0, 0, 0, // snake positions (2 values per snake)
                 0,       // food count → 1
                 0,       // food type → general-expand
                 0.5, 0.5 // position → floor(0.5 * 41) + 1 = 21

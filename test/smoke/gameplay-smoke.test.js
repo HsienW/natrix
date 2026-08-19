@@ -18,7 +18,16 @@ const gameMarkup = `
     </div>
 `;
 
-describe('legacy gameplay smoke', () => {
+const popFrame = function (scheduledFrames) {
+    const keys = Array.from(scheduledFrames.keys());
+    expect(keys.length).toBeGreaterThan(0);
+    const id = keys[0];
+    const cb = scheduledFrames.get(id);
+    scheduledFrames.delete(id);
+    return {id, cb};
+};
+
+describe('gameplay smoke', () => {
     test('buffers input while moving, pausing, resuming, and restarting a match', () => {
         jest.resetModules();
         document.body.innerHTML = gameMarkup;
@@ -40,16 +49,8 @@ describe('legacy gameplay smoke', () => {
         });
         const addEventListenerSpy = jest.spyOn(window, 'addEventListener');
 
-        const runFrame = (frameId, timestamp) => {
-            const callback = scheduledFrames.get(frameId);
-            expect(callback).toEqual(expect.any(Function));
-            scheduledFrames.delete(frameId);
-            callback(timestamp);
-        };
-
-        const {mainGame} = require('../../src/js/main/main.js');
+        const {mainGame, gameRuntime} = require('../../src/js/main/main.js');
         const {gameStartState, gamePauseState, gameFinishState} = require('../../src/js/main/main-game-state.js');
-        const {roleItemMediator} = require('../../src/js/mediator/role-item-mediator.js');
 
         expect(document.querySelector('.game-countdown').textContent).toBe('60');
         expect(document.querySelector('.a-team').textContent).toBe('0');
@@ -57,20 +58,30 @@ describe('legacy gameplay smoke', () => {
 
         document.querySelector('.start-button').click();
         expect(mainGame.currentState).toBe(gameStartState);
+        expect(gameRuntime.isRunning()).toBe(true);
 
-        const snakes = roleItemMediator.getData('getAllSnake');
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowRight'}));
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyD'}));
-        expect(snakes['a-team'][0].getSnakeDirection()).toEqual({x: 0, y: 0});
-        expect(snakes['b-team'][0].getSnakeDirection()).toEqual({x: 0, y: 0});
 
-        runFrame(1, 102);
-        runFrame(2, 0);
+        const stateBeforeStep = gameRuntime.getState();
+        const aSnakeBefore = stateBeforeStep.snakes.find((s) => s.id === 'a-snake');
+        const bSnakeBefore = stateBeforeStep.snakes.find((s) => s.id === 'b-snake');
+        expect(aSnakeBefore.direction).toEqual({x: 0, y: 0});
+        expect(bSnakeBefore.direction).toEqual({x: 0, y: 0});
 
-        expect(snakes['a-team'][0].getSnakeDirection()).toEqual({x: 1, y: 0});
-        expect(snakes['b-team'][0].getSnakeDirection()).toEqual({x: 1, y: 0});
-        expect(snakes['a-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 1});
-        expect(snakes['b-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 1});
+        const initFrame = popFrame(scheduledFrames);
+        initFrame.cb(0);
+
+        const stepFrame = popFrame(scheduledFrames);
+        stepFrame.cb(102);
+
+        const stateAfterStep = gameRuntime.getState();
+        const aSnakeAfter = stateAfterStep.snakes.find((s) => s.id === 'a-snake');
+        const bSnakeAfter = stateAfterStep.snakes.find((s) => s.id === 'b-snake');
+        expect(aSnakeAfter.direction).toEqual({x: 1, y: 0});
+        expect(bSnakeAfter.direction).toEqual({x: 1, y: 0});
+        expect(aSnakeAfter.body[0]).toEqual({x: 2, y: 1});
+        expect(bSnakeAfter.body[0]).toEqual({x: 2, y: 1});
         expect(document.querySelector('.a-team').textContent).toBe('1');
         expect(document.querySelector('.b-team').textContent).toBe('1');
         expect(document.querySelectorAll('.a-snake-body')).toHaveLength(2);
@@ -79,19 +90,27 @@ describe('legacy gameplay smoke', () => {
 
         document.querySelector('.pause-button').click();
         expect(mainGame.currentState).toBe(gamePauseState);
-        expect(cancelledFrames).toEqual(new Set([3, 4]));
+        expect(gameRuntime.isRunning()).toBe(false);
 
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowDown'}));
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyS'}));
-        expect(snakes['a-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 1});
-        expect(snakes['b-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 1});
+        const stateWhilePaused = gameRuntime.getState();
+        const aSnakePaused = stateWhilePaused.snakes.find((s) => s.id === 'a-snake');
+        expect(aSnakePaused.body[0]).toEqual({x: 2, y: 1});
 
         document.querySelector('.start-button').click();
         expect(mainGame.currentState).toBe(gameStartState);
-        expect(global.requestAnimationFrame).toHaveBeenCalledTimes(6);
-        runFrame(5, 202);
-        expect(snakes['a-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 2});
-        expect(snakes['b-team'][0].getSnakeHeadPosition()).toEqual({x: 2, y: 2});
+        expect(gameRuntime.isRunning()).toBe(true);
+
+        const resumeInitFrame = popFrame(scheduledFrames);
+        resumeInitFrame.cb(150);
+
+        const resumeStepFrame = popFrame(scheduledFrames);
+        resumeStepFrame.cb(252);
+
+        const stateAfterResume = gameRuntime.getState();
+        const aSnakeResumed = stateAfterResume.snakes.find((s) => s.id === 'a-snake');
+        expect(aSnakeResumed.body[0]).toEqual({x: 2, y: 2});
 
         document.querySelector('.pause-button').click();
         document.querySelector('.finish-button').click();
