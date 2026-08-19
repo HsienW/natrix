@@ -46,12 +46,6 @@ const checkFoodOnSnakeBody = (food, allSnake) => {
     return null;
 }
 
-const checkKeydownIsExistOperation = (keydownEventCode, operationObject) => {
-    return Object.keys(operationObject).some((operationItem) => {
-        return operationItem === keydownEventCode;
-    });
-}
-
 const checkOnlySurviveTeam = (allSnake) => {
     // 回傳剩下唯一有玩家存活的 Snake Team
     let result = [];
@@ -76,6 +70,5 @@ export {
     checkPositionOutsideMap,
     checkPositionOnSnakeBody,
     checkFoodOnSnakeBody,
-    checkKeydownIsExistOperation,
     checkOnlySurviveTeam
 }

@@ -2,6 +2,7 @@
 
 import {gameFinishState} from './main-game-state.js';
 import {mainView} from './main-view.js';
+import {keyboardInput} from '../input/keyboard-input.js';
 import '../../style/reset.css';
 import '../../style/main.css';
 import '../../style/role.css';
@@ -29,6 +30,7 @@ Main.prototype.initMainGameView = function () {
 const mainGame = new Main();
 
 mainGame.initMainGameView();
+keyboardInput.start();
 
 export {
     mainGame,

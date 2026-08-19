@@ -1,27 +1,20 @@
-import {checkKeydownIsExistOperation} from '../common/role-util.js';
 import {snakeDeadRuleChecker} from '../checker/checker.js';
 import {roleItemMediator} from '../mediator/role-item-mediator.js';
 import {map} from './map.js';
 import {snakeTypeInfo} from '../role-config/snake-type.js';
+import {getDirectionVector} from '../role-config/snake-operation.js';
 
-const Snake = function (snakeSpeed, snakeTeam, snakeName, initBodyPosition, direction, operation, snakeStyleName) {
+const Snake = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, snakeStyleName) {
     this.newSnakeBody = 0;
     // this.snakeWin = false;
     this.snakeDead = false;
     this.snakeSpeed = snakeSpeed;
     this.snakeTeam = snakeTeam;
-    this.snakeName = snakeName;
+    this.playerId = playerId;
+    this.snakeName = playerId;
     this.snakeBody = initBodyPosition;
     this.snakeDirection = direction;
-    this.snakeOperation = operation;
     this.snakeStyleName = snakeStyleName;
-    this.initListenerOperation = function () {
-        window.addEventListener('keydown', event => {
-            if (checkKeydownIsExistOperation(event.code, this.snakeOperation)) {
-                this.snakeDirection = this.snakeOperation[event.code](this.snakeDirection);
-            }
-        });
-    }
 }
 
 Snake.prototype.getSnakeHeadPosition = function () {
@@ -50,6 +43,21 @@ Snake.prototype.getSnakeDead = function () {
 
 Snake.prototype.getSnakeTeam = function () {
     return this.snakeTeam;
+}
+
+Snake.prototype.getPlayerId = function () {
+    return this.playerId;
+}
+
+Snake.prototype.changeDirection = function (direction) {
+    const nextDirection = getDirectionVector(direction);
+
+    if (!nextDirection) {
+        return false;
+    }
+
+    this.snakeDirection = nextDirection;
+    return true;
 }
 
 // Snake.prototype.snakeTeamWin = function () {
@@ -121,8 +129,8 @@ Snake.prototype.renderSnakeItem = function () {
     }
 }
 
-const snakeFactory = function (snakeSpeed, snakeTeam, snakeName, initBodyPosition, direction, operation, snakeStyleName) {
-    let newSnake = new Snake(snakeSpeed, snakeTeam, snakeName, initBodyPosition, direction, operation, snakeStyleName);
+const snakeFactory = function (snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, snakeStyleName) {
+    let newSnake = new Snake(snakeSpeed, snakeTeam, playerId, initBodyPosition, direction, snakeStyleName);
     roleItemMediator.callAction('addSnake', newSnake);
 }
 
@@ -134,10 +142,9 @@ const initSnakes = function () {
         snakeFactory(
             initSnake.snakeSpeed,
             initSnake.snakeTeam,
-            initSnake.snakeName,
+            initSnake.playerId,
             initSnake.initBodyPosition,
             initSnake.direction,
-            initSnake.operation,
             initSnake.snakeStyleName,
         );
     }

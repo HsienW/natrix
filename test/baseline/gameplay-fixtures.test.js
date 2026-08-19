@@ -4,6 +4,7 @@ const {getRandomFoodAmount} = require('../../src/js/common/util.js');
 const {mapSize} = require('../../src/js/role/map.js');
 const {foodTypeInfo} = require('../../src/js/role-config/food-type.js');
 const {snakeTypeInfo} = require('../../src/js/role-config/snake-type.js');
+const {getKeyboardCodesForPlayer} = require('../../src/js/input/command-map.js');
 
 describe('legacy gameplay fixtures', () => {
     afterEach(() => {
@@ -42,8 +43,10 @@ describe('legacy gameplay fixtures', () => {
 
         expect(blueSnake.snakeTeam).toBe(legacyBaseline.teams.blue.id);
         expect(redSnake.snakeTeam).toBe(legacyBaseline.teams.red.id);
-        expect(Object.keys(blueSnake.operation)).toEqual(legacyBaseline.teams.blue.controls);
-        expect(Object.keys(redSnake.operation)).toEqual(legacyBaseline.teams.red.controls);
+        expect(blueSnake.playerId).toBe('a-snake');
+        expect(redSnake.playerId).toBe('b-snake');
+        expect(getKeyboardCodesForPlayer(blueSnake.playerId)).toEqual(legacyBaseline.teams.blue.controls);
+        expect(getKeyboardCodesForPlayer(redSnake.playerId)).toEqual(legacyBaseline.teams.red.controls);
         expect(blueSnake.direction).toEqual({x: 0, y: 0});
         expect(redSnake.direction).toEqual({x: 0, y: 0});
     });
