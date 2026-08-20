@@ -7,20 +7,19 @@ import {COMMAND_TYPES} from '../input/command-map.js';
 
 // roleItemMediator 負責中介管理單一角色相關的行為
 // 例如: 食物、蛇的初始化、渲染、更新等等...
-
 const roleItemMediator = (function () {
     let allFood = {};
     let allSnake = {};
     const operations = {};
 
     operations.addFood = function (food) {
-        let foodType = food.foodType;
+        const foodType = food.foodType;
         allFood[foodType] = allFood[foodType] || [];
         allFood[foodType].push(food);
     };
 
     operations.addSnake = function (snake) {
-        let snakeTeam = snake.snakeTeam;
+        const snakeTeam = snake.snakeTeam;
         allSnake[snakeTeam] = allSnake[snakeTeam] || [];
         allSnake[snakeTeam].push(snake);
     };
@@ -55,12 +54,13 @@ const roleItemMediator = (function () {
         });
     };
 
-    operations.snakeEatFood = function (food, eatFoodSnakes) {
-        let snakeAddBodyRate = food.getFoodBodyExpandRate();
-        eatFoodSnakes.forEach((snake) => {
-            snake['expandSnakeBody'](snakeAddBodyRate);
+    operations.snakeEatFood = function (food, snakesThatAteFood) {
+        const bodyGrowth = food.getFoodBodyExpandRate();
+
+        snakesThatAteFood.forEach((snake) => {
+            snake.expandSnakeBody(bodyGrowth);
             // 增加的身體長度等於拿到的分數
-            teamMediator.callAction('addTeamScore', snake, snakeAddBodyRate);
+            teamMediator.callAction('addTeamScore', snake, bodyGrowth);
         });
     };
 
@@ -92,10 +92,9 @@ const roleItemMediator = (function () {
         callRoleItemMethod(allSnake, 'renderSnakeItem');
     }
 
-    //處理某種角色, 全部的 item 需要一起呼叫的
     const findSnakeByPlayerId = function (playerId) {
-        for (let team in allSnake) {
-            const snake = allSnake[team].find((snakeItem) => {
+        for (const snakeTeam in allSnake) {
+            const snake = allSnake[snakeTeam].find((snakeItem) => {
                 return snakeItem.getPlayerId() === playerId;
             });
 
@@ -107,24 +106,23 @@ const roleItemMediator = (function () {
         return null;
     }
 
+    // 呼叫同一角色群組內所有 item 的指定 method
     const callRoleItemMethod = function (role, methodName) {
-        for (let key in role) {
-            let items = role[key];
+        for (const roleType in role) {
+            const items = role[roleType];
+
             items.forEach((item) => {
                 item[methodName]();
             });
         }
     }
 
-    //處理呼叫參數的介面
-    const getData = function () {
-        let action = Array.prototype.shift.call(arguments);
-        return operations[action].apply(this);
+    const getData = function (action) {
+        return operations[action].call(this);
     }
 
-    const callAction = function () {
-        let action = Array.prototype.shift.call(arguments);
-        operations[action].apply(this, arguments);
+    const callAction = function (action, ...parameters) {
+        operations[action].apply(this, parameters);
     }
 
     return {
