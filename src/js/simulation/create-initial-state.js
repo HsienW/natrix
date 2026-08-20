@@ -16,20 +16,23 @@ const SNAKE_DEFINITIONS = [
 
 const FOOD_TYPE_KEYS = Object.keys(FOOD_TYPE_CONFIG);
 
-const createInitialFood = function (rng, mapSize) {
-    const foodCount = Math.floor(rng() * 4) + 1;
+const createInitialFood = function (randomGenerator, mapSize) {
+    const foodCount = Math.floor(randomGenerator.next() * 4) + 1;
     const food = [];
 
     for (let i = 0; i < foodCount; i++) {
-        const typeKey = FOOD_TYPE_KEYS[Math.floor(rng() * FOOD_TYPE_KEYS.length)];
+        const randomTypeIndex = Math.floor(
+            randomGenerator.next() * FOOD_TYPE_KEYS.length,
+        );
+        const typeKey = FOOD_TYPE_KEYS[randomTypeIndex];
         const config = FOOD_TYPE_CONFIG[typeKey];
 
         food.push({
             id: 'food-' + i,
             type: typeKey,
             position: {
-                x: Math.floor(rng() * mapSize) + 1,
-                y: Math.floor(rng() * mapSize) + 1,
+                x: Math.floor(randomGenerator.next() * mapSize) + 1,
+                y: Math.floor(randomGenerator.next() * mapSize) + 1,
             },
             bodyGrowth: config.bodyGrowth,
             style: config.style,
@@ -39,15 +42,15 @@ const createInitialFood = function (rng, mapSize) {
     return food;
 };
 
-const createInitialSnakes = function (rng, mapSize) {
+const createInitialSnakes = function (randomGenerator, mapSize) {
     return SNAKE_DEFINITIONS.map((def) => ({
         id: def.id,
         team: def.team,
         alive: true,
         direction: {x: 0, y: 0},
         body: [{
-            x: Math.floor(rng() * mapSize) + 1,
-            y: Math.floor(rng() * mapSize) + 1,
+            x: Math.floor(randomGenerator.next() * mapSize) + 1,
+            y: Math.floor(randomGenerator.next() * mapSize) + 1,
         }],
         pendingGrowth: 0,
         style: def.style,
@@ -56,10 +59,10 @@ const createInitialSnakes = function (rng, mapSize) {
 
 const createInitialGameState = function (config) {
     const mergedConfig = {...DEFAULT_CONFIG, ...config};
-    const rng = createSeededRng(mergedConfig.seed);
+    const randomGenerator = createSeededRng(mergedConfig.seed);
 
-    const snakes = createInitialSnakes(rng, mergedConfig.mapSize);
-    const food = createInitialFood(rng, mergedConfig.mapSize);
+    const snakes = createInitialSnakes(randomGenerator, mergedConfig.mapSize);
+    const food = createInitialFood(randomGenerator, mergedConfig.mapSize);
 
     return {
         version: GAME_STATE_VERSION,
@@ -77,7 +80,7 @@ const createInitialGameState = function (config) {
         finished: false,
         winner: null,
         finishReason: null,
-        rngState: rng.getState(),
+        rngState: randomGenerator.getState(),
     };
 };
 

@@ -79,14 +79,14 @@ describe('gameplay smoke', () => {
         const bSnakeAfter = stateAfterStep.snakes.find((s) => s.id === 'b-snake');
         expect(aSnakeAfter.direction).toEqual({x: 1, y: 0});
         expect(bSnakeAfter.direction).toEqual({x: 1, y: 0});
-        expect(aSnakeAfter.body[0]).toEqual({x: 12, y: 1});
-        expect(bSnakeAfter.body[0]).toEqual({x: 11, y: 6});
+        expect(aSnakeAfter.body[0]).toEqual({x: 2, y: 1});
+        expect(bSnakeAfter.body[0]).toEqual({x: 3, y: 9});
         expect(document.querySelector('.a-team').textContent).toBe('0');
         expect(document.querySelector('.b-team').textContent).toBe('0');
         expect(document.querySelectorAll('.a-snake-body')).toHaveLength(1);
         expect(document.querySelectorAll('.b-snake-body')).toHaveLength(1);
         expect(document.querySelectorAll('.mega-expand-food')).toHaveLength(1);
-        expect(document.querySelectorAll('.general-expand-food')).toHaveLength(1);
+        expect(document.querySelectorAll('.general-expand-food')).toHaveLength(0);
 
         document.querySelector('.pause-button').click();
         expect(gameRuntime.getLifecycleState()).toBe('PAUSED');
@@ -96,7 +96,7 @@ describe('gameplay smoke', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyS'}));
         const stateWhilePaused = gameRuntime.getState();
         const aSnakePaused = stateWhilePaused.snakes.find((s) => s.id === 'a-snake');
-        expect(aSnakePaused.body[0]).toEqual({x: 12, y: 1});
+        expect(aSnakePaused.body[0]).toEqual({x: 2, y: 1});
 
         document.querySelector('.start-button').click();
         expect(gameRuntime.getLifecycleState()).toBe('RUNNING');
@@ -110,7 +110,7 @@ describe('gameplay smoke', () => {
 
         const stateAfterResume = gameRuntime.getState();
         const aSnakeResumed = stateAfterResume.snakes.find((s) => s.id === 'a-snake');
-        expect(aSnakeResumed.body[0]).toEqual({x: 12, y: 2});
+        expect(aSnakeResumed.body[0]).toEqual({x: 2, y: 2});
 
         document.querySelector('.pause-button').click();
         document.querySelector('.finish-button').click();

@@ -4,53 +4,63 @@ const {
 } = require('../../src/js/random/seeded-rng.js');
 
 describe('seeded RNG', () => {
-    test('produces the known Mulberry32 sequence for seed zero', () => {
-        const random = createSeededRng(0);
+    test('produces the known sequence for seed zero', () => {
+        const randomGenerator = createSeededRng(0);
 
-        expect([random(), random(), random(), random()]).toEqual([
-            0.26642920868471265,
-            0.0003297457005828619,
-            0.2232720274478197,
-            0.1462021479383111,
+        expect([
+            randomGenerator.next(),
+            randomGenerator.next(),
+            randomGenerator.next(),
+            randomGenerator.next(),
+        ]).toEqual([
+            0.000017,
+            0.000714,
+            0.029291,
+            0.200948,
         ]);
     });
 
     test('produces values in [0, 1)', () => {
-        const random = createSeededRng(42);
+        const randomGenerator = createSeededRng(42);
 
         for (let i = 0; i < 1000; i++) {
-            const value = random();
+            const value = randomGenerator.next();
             expect(value).toBeGreaterThanOrEqual(0);
             expect(value).toBeLessThan(1);
         }
     });
 
     test('same seed produces an identical sequence', () => {
-        const randomA = createSeededRng(12345);
-        const randomB = createSeededRng(12345);
+        const randomGeneratorA = createSeededRng(12345);
+        const randomGeneratorB = createSeededRng(12345);
 
-        expect(Array.from({length: 100}, () => randomA())).toEqual(
-            Array.from({length: 100}, () => randomB()),
+        expect(Array.from({length: 100}, () => randomGeneratorA.next())).toEqual(
+            Array.from({length: 100}, () => randomGeneratorB.next()),
         );
     });
 
     test('different seeds produce different sequences', () => {
-        const randomA = createSeededRng(1);
-        const randomB = createSeededRng(2);
+        const randomGeneratorA = createSeededRng(1);
+        const randomGeneratorB = createSeededRng(2);
 
-        expect(Array.from({length: 10}, () => randomA())).not.toEqual(
-            Array.from({length: 10}, () => randomB()),
+        expect(Array.from({length: 10}, () => randomGeneratorA.next())).not.toEqual(
+            Array.from({length: 10}, () => randomGeneratorB.next()),
         );
     });
 
+    test('normalizes negative and non-integer seeds', () => {
+        expect(createSeededRng(-1).getState()).toBe(999999);
+        expect(createSeededRng(12.75).getState()).toBe(12);
+    });
+
     test('continues the same sequence from its serialized state', () => {
-        const random = createSeededRng(0);
-        random();
-        random();
+        const randomGenerator = createSeededRng(0);
+        randomGenerator.next();
+        randomGenerator.next();
 
-        const resumed = nextRandomValue(random.getState());
+        const resumed = nextRandomValue(randomGenerator.getState());
 
-        expect(resumed.value).toBe(random());
-        expect(resumed.nextState).toBe(random.getState());
+        expect(resumed.value).toBe(randomGenerator.next());
+        expect(resumed.nextState).toBe(randomGenerator.getState());
     });
 });

@@ -1,42 +1,51 @@
-const RNG_INCREMENT = 0x6D2B79F5;
-const UINT32_RANGE = 4294967296;
+// A small linear congruential generator is sufficient for food placement.
+// One million keeps state snapshots readable, while 41 and 17 let the
+// generator visit every state in the range before the sequence repeats.
+const RANDOM_STATE_RANGE = 1_000_000;
+const RANDOM_STEP_MULTIPLIER = 41;
+const RANDOM_STEP_INCREMENT = 17;
 
-const mix32 = function (value) {
-    let mixed = value;
-    mixed = Math.imul(mixed ^ (mixed >>> 15), mixed | 1);
-    mixed = mixed ^ (mixed + Math.imul(mixed ^ (mixed >>> 7), mixed | 61));
-    return (mixed ^ (mixed >>> 14)) >>> 0;
-};
+const normalizeState = function (state) {
+    if (!Number.isFinite(state)) {
+        return 0;
+    }
 
-const advanceState = function (state) {
-    return (state + RNG_INCREMENT) | 0;
+    let normalizedState = Math.trunc(state) % RANDOM_STATE_RANGE;
+    if (normalizedState < 0) {
+        normalizedState = normalizedState + RANDOM_STATE_RANGE;
+    }
+
+    return normalizedState;
 };
 
 const nextRandomValue = function (state) {
-    const nextState = advanceState(state);
-    const mixed = mix32(nextState);
+    const currentState = normalizeState(state);
+    const advancedState = currentState * RANDOM_STEP_MULTIPLIER
+        + RANDOM_STEP_INCREMENT;
+    const nextState = advancedState % RANDOM_STATE_RANGE;
+    const randomValue = nextState / RANDOM_STATE_RANGE;
 
     return {
-        value: mixed / UINT32_RANGE,
+        value: randomValue,
         nextState: nextState,
     };
 };
 
 const createSeededRng = function (seed) {
-    let state = seed | 0;
+    let state = normalizeState(seed);
 
-    const random = function () {
-        const result = nextRandomValue(state);
-        state = result.nextState;
-        return result.value;
+    const operations = {
+        next: function () {
+            const result = nextRandomValue(state);
+            state = result.nextState;
+            return result.value;
+        },
+        getState: function () {
+            return state;
+        },
     };
 
-    // State is exposed as plain data so a simulation can resume the same sequence.
-    random.getState = function () {
-        return state;
-    };
-
-    return random;
+    return operations;
 };
 
 export {

@@ -36,7 +36,7 @@ describe('createInitialGameState', () => {
         expect(blue.team).toBe('a-team');
         expect(blue.alive).toBe(true);
         expect(blue.direction).toEqual({x: 0, y: 0});
-        expect(blue.body).toEqual([{x: 11, y: 1}]);
+        expect(blue.body).toEqual([{x: 1, y: 1}]);
         expect(blue.pendingGrowth).toBe(0);
         expect(blue.style).toBe('a-snake-body');
 
@@ -44,7 +44,7 @@ describe('createInitialGameState', () => {
         expect(red.team).toBe('b-team');
         expect(red.alive).toBe(true);
         expect(red.direction).toEqual({x: 0, y: 0});
-        expect(red.body).toEqual([{x: 10, y: 6}]);
+        expect(red.body).toEqual([{x: 2, y: 9}]);
         expect(red.pendingGrowth).toBe(0);
         expect(red.style).toBe('b-snake-body');
     });
@@ -84,16 +84,9 @@ describe('createInitialGameState', () => {
             {
                 id: 'food-0',
                 type: 'mega-expand',
-                position: {x: 26, y: 27},
+                position: {x: 24, y: 10},
                 bodyGrowth: 2,
                 style: 'mega-expand-food',
-            },
-            {
-                id: 'food-1',
-                type: 'general-expand',
-                position: {x: 24, y: 11},
-                bodyGrowth: 1,
-                style: 'general-expand-food',
             },
         ]);
     });
@@ -121,7 +114,7 @@ describe('createInitialGameState', () => {
         expect(state.finished).toBe(false);
         expect(state.winner).toBeNull();
         expect(state.finishReason).toBeNull();
-        expect(state.rngState).toBe(-1327612537);
+        expect(state.rngState).toBe(222376);
     });
 
     test('contains only plain data with no DOM, class instances, or functions', () => {

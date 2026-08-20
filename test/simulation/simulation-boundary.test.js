@@ -111,7 +111,7 @@ describe('simulation boundary', () => {
         expect(state.remainingTicks).toBe(597);
 
         const aSnake = state.snakes.find((s) => s.id === 'a-snake');
-        expect(aSnake.body[0].x).toBe(14);
+        expect(aSnake.body[0].x).toBe(4);
     });
 
     test('createSnapshot can be called independently without simulation facade', () => {
