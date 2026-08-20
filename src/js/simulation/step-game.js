@@ -41,9 +41,9 @@ const stepGame = function (previousState, commands) {
         events.push({type: 'MATCH_FINISHED', winner: survival.winner, reason: survival.reason});
     }
 
-    state = {...state, remainingTicks: state.remainingTicks - 1};
-
     if (!state.finished) {
+        state = {...state, remainingTicks: state.remainingTicks - 1};
+
         const timeResult = checkTimeExpiry(state);
         if (timeResult) {
             state = {

@@ -382,6 +382,7 @@ describe('stepGame', () => {
         expect(result.state.finished).toBe(true);
         expect(result.state.winner).toBe('b-team');
         expect(result.state.finishReason).toBe('survival');
+        expect(result.state.remainingTicks).toBe(600);
         expect(result.events.some((e) => e.type === 'MATCH_FINISHED')).toBe(true);
     });
 
