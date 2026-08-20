@@ -6,6 +6,7 @@ const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 const createRuntime = function (overrides = {}) {
     const buffer = overrides.inputBuffer || new InputBuffer();
     const renderCallback = overrides.renderCallback || jest.fn();
+    const eventCallback = overrides.eventCallback || jest.fn();
     const frames = [];
     let nextId = 1;
 
@@ -25,13 +26,22 @@ const createRuntime = function (overrides = {}) {
         config: overrides.config || defaultConfig,
         inputBuffer: buffer,
         renderCallback,
+        eventCallback,
         stepMs: overrides.stepMs || 100,
         maxFrameDeltaMs: overrides.maxFrameDeltaMs || 250,
         requestFrame,
         cancelFrame,
     });
 
-    return {runtime, buffer, renderCallback, frames, requestFrame, cancelFrame};
+    return {
+        runtime,
+        buffer,
+        renderCallback,
+        eventCallback,
+        frames,
+        requestFrame,
+        cancelFrame,
+    };
 };
 
 const startAndInit = function (runtime, frames) {
@@ -77,7 +87,7 @@ describe('GameRuntime', () => {
         expect(requestFrame).toHaveBeenCalledTimes(1);
     });
 
-    test('start does nothing when match is finished', () => {
+    test('start from finished resets and starts a new match', () => {
         const {runtime, frames, requestFrame} = createRuntime();
 
         runtime.start();
@@ -90,8 +100,10 @@ describe('GameRuntime', () => {
 
         runtime.start();
 
-        expect(runtime.isRunning()).toBe(false);
-        expect(requestFrame).not.toHaveBeenCalled();
+        expect(runtime.isRunning()).toBe(true);
+        expect(runtime.getLifecycleState()).toBe('RUNNING');
+        expect(runtime.getState().finished).toBe(false);
+        expect(requestFrame).toHaveBeenCalledTimes(1);
     });
 
     test('pause stops the loop and cancels the pending frame', () => {
@@ -124,6 +136,7 @@ describe('GameRuntime', () => {
         startAndInit(runtime, frames);
         runNextFrame(frames, 200);
 
+        runtime.stop();
         runtime.reset();
 
         expect(buffer.size()).toBe(0);
@@ -234,6 +247,25 @@ describe('GameRuntime', () => {
 
         expect(logA).not.toBe(logB);
         expect(logA).toEqual(logB);
+    });
+
+    test('stops the loop and forwards events when the match finishes', () => {
+        const eventCallback = jest.fn();
+        const {runtime, frames} = createRuntime({
+            config: {...defaultConfig, durationTicks: 1},
+            eventCallback,
+        });
+
+        startAndInit(runtime, frames);
+        runNextFrame(frames, 100);
+
+        expect(runtime.getLifecycleState()).toBe('FINISHED');
+        expect(runtime.isRunning()).toBe(false);
+        expect(frames).toHaveLength(0);
+        expect(eventCallback).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'MATCH_FINISHED',
+            reason: 'draw',
+        }));
     });
 
     test('throws when config is missing', () => {

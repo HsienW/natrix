@@ -194,6 +194,22 @@ describe('runtime lifecycle integration', () => {
         expect(events[4]).toEqual({ok: true, action: 'RESET', from: 'FINISHED', to: 'IDLE'});
     });
 
+    test('START from FINISHED notifies RESET before START', () => {
+        const {runtime} = createRuntime();
+        const transitions = [];
+        runtime.onLifecycleChange((result) => transitions.push(result));
+
+        runtime.dispatch('START');
+        runtime.dispatch('FINISH');
+        transitions.length = 0;
+        runtime.dispatch('START');
+
+        expect(transitions).toEqual([
+            {ok: true, action: 'RESET', from: 'FINISHED', to: 'IDLE'},
+            {ok: true, action: 'START', from: 'IDLE', to: 'RUNNING'},
+        ]);
+    });
+
     test('lifecycle listeners are NOT notified on invalid transitions', () => {
         const {runtime} = createRuntime();
         const events = [];
