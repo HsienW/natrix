@@ -4,7 +4,7 @@ import {moveAllSnakes} from './movement.js';
 import {checkDeaths} from './collision.js';
 import {checkSurvivingTeam, checkTimeExpiry} from './finish-rules.js';
 
-const stepGame = function (previousState, commands, environment) {
+const stepGame = function (previousState, commands) {
     if (previousState.finished) {
         return {state: previousState, events: []};
     }
@@ -14,12 +14,13 @@ const stepGame = function (previousState, commands, environment) {
 
     state = applyCommands(state, commands);
 
-    const scoringResult = resolveScoring(state, environment);
+    const scoringResult = resolveScoring(state);
     state = {
         ...state,
         snakes: scoringResult.snakes,
         food: scoringResult.food,
         scores: scoringResult.scores,
+        rngState: scoringResult.rngState,
     };
     events.push(...scoringResult.events);
 
@@ -31,6 +32,7 @@ const stepGame = function (previousState, commands, environment) {
 
     const survival = checkSurvivingTeam(state.snakes);
     if (survival) {
+        // Snake 的 win/lose 狀態由 simulation 統一保存，不再放在單一 Snake。
         state = {
             ...state,
             finished: true,
@@ -40,9 +42,9 @@ const stepGame = function (previousState, commands, environment) {
         events.push({type: 'MATCH_FINISHED', winner: survival.winner, reason: survival.reason});
     }
 
-    state = {...state, remainingTicks: state.remainingTicks - 1};
-
     if (!state.finished) {
+        state = {...state, remainingTicks: state.remainingTicks - 1};
+
         const timeResult = checkTimeExpiry(state);
         if (timeResult) {
             state = {

@@ -1,17 +1,17 @@
 import {FixedTimestepLoop} from './fixed-timestep-loop.js';
 import {createSimulation} from '../simulation/simulation.js';
-import {InputBuffer} from '../input/input-buffer.js';
 import {RuntimeStateMachine} from './runtime-state-machine.js';
 import {RUNTIME_STATES, RUNTIME_ACTIONS} from './runtime-state.js';
 
 const DEFAULT_RENDER = function () {};
+const DEFAULT_EVENT_HANDLER = function () {};
 
 class GameRuntime {
     constructor({
         config,
-        environment,
         inputBuffer,
         renderCallback = DEFAULT_RENDER,
+        eventCallback = DEFAULT_EVENT_HANDLER,
         stepMs,
         maxFrameDeltaMs,
         requestFrame,
@@ -20,22 +20,25 @@ class GameRuntime {
         if (!config) {
             throw new TypeError('GameRuntime requires a config.');
         }
-        if (!environment || typeof environment.random !== 'function') {
-            throw new TypeError('GameRuntime requires an environment with a random function.');
-        }
         if (!inputBuffer || typeof inputBuffer.drain !== 'function') {
             throw new TypeError('GameRuntime requires an input buffer.');
         }
+        if (typeof renderCallback !== 'function') {
+            throw new TypeError('GameRuntime render callback must be a function.');
+        }
+        if (typeof eventCallback !== 'function') {
+            throw new TypeError('GameRuntime event callback must be a function.');
+        }
 
         this.config = config;
-        this.environment = environment;
         this.inputBuffer = inputBuffer;
         this.renderCallback = renderCallback;
+        this.eventCallback = eventCallback;
         this.eventLog = [];
         this.currentAlpha = 0;
         this.lifecycleListeners = [];
 
-        this.simulation = createSimulation(config, environment);
+        this.simulation = createSimulation(config);
         this.currentSnapshot = this.simulation.snapshot();
 
         this.machine = new RuntimeStateMachine();
@@ -63,7 +66,9 @@ class GameRuntime {
     dispatch(action) {
         if (action === RUNTIME_ACTIONS.START
             && this.machine.getState() === RUNTIME_STATES.FINISHED) {
-            this.reset();
+            const resetResult = this.machine.dispatch(RUNTIME_ACTIONS.RESET);
+            this.executeAction(RUNTIME_ACTIONS.RESET);
+            this.notifyLifecycleListeners(resetResult);
         }
 
         const result = this.machine.dispatch(action);
@@ -92,7 +97,7 @@ class GameRuntime {
             this.loop.stop();
             break;
         case RUNTIME_ACTIONS.RESET:
-            this.reset();
+            this.resetRuntime();
             break;
         }
     }
@@ -112,28 +117,28 @@ class GameRuntime {
     }
 
     start() {
-        if (this.loop.isRunning()) {
-            return;
+        if (this.machine.getState() === RUNTIME_STATES.PAUSED) {
+            return this.dispatch(RUNTIME_ACTIONS.RESUME);
         }
-        if (this.simulation.getState().finished) {
-            return;
-        }
-        this.loop.start();
+        return this.dispatch(RUNTIME_ACTIONS.START);
     }
 
     pause() {
-        this.loop.pause();
+        return this.dispatch(RUNTIME_ACTIONS.PAUSE);
     }
 
     stop() {
-        this.loop.stop();
+        return this.dispatch(RUNTIME_ACTIONS.FINISH);
     }
 
     reset() {
+        return this.dispatch(RUNTIME_ACTIONS.RESET);
+    }
+
+    resetRuntime() {
         this.loop.stop();
         this.inputBuffer.clear();
-        this.simulation.reset(this.config, this.environment);
-        this.machine.reset();
+        this.simulation.reset(this.config);
         this.eventLog = [];
         this.currentAlpha = 0;
         this.currentSnapshot = this.simulation.snapshot();
@@ -159,6 +164,15 @@ class GameRuntime {
         const commands = this.inputBuffer.drain();
         const result = this.simulation.step(commands);
         this.eventLog.push(...result.events);
+
+        if (result.state.finished
+            && this.machine.getState() === RUNTIME_STATES.RUNNING) {
+            this.dispatch(RUNTIME_ACTIONS.FINISH);
+        }
+
+        for (const event of result.events) {
+            this.eventCallback(event);
+        }
     }
 
     handleRender(alpha) {

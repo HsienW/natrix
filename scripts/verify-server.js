@@ -2,22 +2,28 @@ const {spawn} = require('child_process');
 const http = require('http');
 const path = require('path');
 
+const MILLISECONDS_PER_SECOND = 1000;
+const DEFAULT_READINESS_TIMEOUT_MILLISECONDS = 90 * MILLISECONDS_PER_SECOND;
+const REQUEST_TIMEOUT_MILLISECONDS = 2 * MILLISECONDS_PER_SECOND;
+const SERVER_RETRY_DELAY_MILLISECONDS = 250;
+const SHUTDOWN_TIMEOUT_MILLISECONDS = 2 * MILLISECONDS_PER_SECOND;
+const SHUTDOWN_CHECK_DELAY_MILLISECONDS = 50;
+
 const projectDirectory = path.resolve(__dirname, '..');
 const mode = process.argv[2];
-const defaultReadinessTimeoutMilliseconds = 90000;
-const configuredReadinessTimeout = process.env.SERVER_READY_TIMEOUT_MS;
-const readinessTimeoutMilliseconds = configuredReadinessTimeout === undefined
-    ? defaultReadinessTimeoutMilliseconds
-    : Number(configuredReadinessTimeout);
+const configuredReadinessTimeoutMilliseconds = process.env.SERVER_READY_TIMEOUT_MS;
+const readinessTimeoutMilliseconds = configuredReadinessTimeoutMilliseconds === undefined
+    ? DEFAULT_READINESS_TIMEOUT_MILLISECONDS
+    : Number(configuredReadinessTimeoutMilliseconds);
 
 if (!Number.isInteger(readinessTimeoutMilliseconds) || readinessTimeoutMilliseconds <= 0) {
     console.error('SERVER_READY_TIMEOUT_MS must be a positive integer.');
     process.exit(1);
 }
 
-const configurations = {
+const serverConfigurations = {
     development: {
-        arguments: [
+        commandArguments: [
             'node_modules/webpack-cli/bin/cli.js',
             'serve',
             '--config',
@@ -28,61 +34,76 @@ const configurations = {
         url: 'http://127.0.0.1:8080/',
     },
     preview: {
-        arguments: [
+        commandArguments: [
             'scripts/serve-dist.js',
         ],
         url: 'http://127.0.0.1:4173/',
     },
 };
 
-if (!configurations[mode]) {
+if (!serverConfigurations[mode]) {
     console.error('Usage: node scripts/verify-server.js <development|preview>');
     process.exit(1);
 }
 
-const configuration = configurations[mode];
-const output = [];
-const child = spawn(process.execPath, configuration.arguments, {
+const serverConfiguration = serverConfigurations[mode];
+const serverOutput = [];
+const serverProcess = spawn(process.execPath, serverConfiguration.commandArguments, {
     cwd: projectDirectory,
     env: process.env,
     stdio: ['ignore', 'pipe', 'pipe'],
 });
-let childExited = false;
+let serverProcessExited = false;
 
-child.stdout.on('data', (chunk) => output.push(chunk.toString()));
-child.stderr.on('data', (chunk) => output.push(chunk.toString()));
-child.on('exit', () => {
-    childExited = true;
+serverProcess.stdout.on('data', function (dataChunk) {
+    serverOutput.push(dataChunk.toString());
+});
+serverProcess.stderr.on('data', function (dataChunk) {
+    serverOutput.push(dataChunk.toString());
+});
+serverProcess.on('exit', function () {
+    serverProcessExited = true;
 });
 
-const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
-
-const request = (url) => new Promise((resolve, reject) => {
-    const requestHandle = http.get(url, (response) => {
-        const chunks = [];
-        response.on('data', (chunk) => chunks.push(chunk));
-        response.on('end', () => resolve({
-            body: Buffer.concat(chunks).toString('utf8'),
-            statusCode: response.statusCode,
-        }));
+const delay = function (milliseconds) {
+    return new Promise(function (resolve) {
+        setTimeout(resolve, milliseconds);
     });
+};
 
-    requestHandle.setTimeout(2000, () => {
-        requestHandle.destroy(new Error(`Request timed out: ${url}`));
+const requestPage = function (url) {
+    return new Promise(function (resolve, reject) {
+        const requestHandle = http.get(url, function (response) {
+            const responseChunks = [];
+
+            response.on('data', function (dataChunk) {
+                responseChunks.push(dataChunk);
+            });
+            response.on('end', function () {
+                resolve({
+                    body: Buffer.concat(responseChunks).toString('utf8'),
+                    statusCode: response.statusCode,
+                });
+            });
+        });
+
+        requestHandle.setTimeout(REQUEST_TIMEOUT_MILLISECONDS, function () {
+            requestHandle.destroy(new Error('Request timed out: ' + url));
+        });
+        requestHandle.on('error', reject);
     });
-    requestHandle.on('error', reject);
-});
+};
 
-const waitForServer = async () => {
-    const deadline = Date.now() + readinessTimeoutMilliseconds;
+const waitForServer = async function () {
+    const readinessDeadline = Date.now() + readinessTimeoutMilliseconds;
 
-    while (Date.now() < deadline) {
-        if (childExited) {
-            throw new Error(`${mode} server exited before becoming ready.`);
+    while (Date.now() < readinessDeadline) {
+        if (serverProcessExited) {
+            throw new Error(mode + ' server exited before becoming ready.');
         }
 
         try {
-            const response = await request(configuration.url);
+            const response = await requestPage(serverConfiguration.url);
             if (response.statusCode === 200) {
                 return response;
             }
@@ -90,61 +111,72 @@ const waitForServer = async () => {
             // The server is still starting; retry until the deadline.
         }
 
-        await delay(250);
+        await delay(SERVER_RETRY_DELAY_MILLISECONDS);
     }
 
     throw new Error(
-        `${mode} server did not become ready within ${readinessTimeoutMilliseconds} milliseconds.`,
+        mode + ' server did not become ready within '
+        + readinessTimeoutMilliseconds + ' milliseconds.',
     );
 };
 
-const stopChild = async () => {
-    if (childExited) {
+const stopServerProcess = async function () {
+    if (serverProcessExited) {
         return;
     }
 
-    child.kill('SIGTERM');
-    const deadline = Date.now() + 2000;
-    while (!childExited && Date.now() < deadline) {
-        await delay(50);
+    serverProcess.kill('SIGTERM');
+    const shutdownDeadline = Date.now() + SHUTDOWN_TIMEOUT_MILLISECONDS;
+
+    while (!serverProcessExited && Date.now() < shutdownDeadline) {
+        await delay(SHUTDOWN_CHECK_DELAY_MILLISECONDS);
     }
 
-    if (!childExited) {
-        child.kill('SIGKILL');
+    if (!serverProcessExited) {
+        serverProcess.kill('SIGKILL');
     }
 };
 
-const verify = async () => {
+const verify = async function () {
     try {
         const rootResponse = await waitForServer();
         const scriptSources = Array.from(
             rootResponse.body.matchAll(/<script[^>]+src="([^"]+)"/g),
-            (match) => match[1],
+            function (match) {
+                return match[1];
+            },
         );
 
         if (scriptSources.length === 0) {
             throw new Error('The generated HTML does not reference a JavaScript bundle.');
         }
 
-        const bundleUrls = scriptSources.map((source) => new URL(source, configuration.url).href);
+        const bundleUrls = scriptSources.map(function (source) {
+            return new URL(source, serverConfiguration.url).href;
+        });
 
         for (const bundleUrl of bundleUrls) {
-            const bundleResponse = await request(bundleUrl);
+            const bundleResponse = await requestPage(bundleUrl);
             if (bundleResponse.statusCode !== 200) {
-                throw new Error(`Bundle request failed with HTTP ${bundleResponse.statusCode}: ${bundleUrl}`);
+                throw new Error(
+                    'Bundle request failed with HTTP ' + bundleResponse.statusCode
+                    + ': ' + bundleUrl,
+                );
             }
         }
 
-        console.log(`${mode} server verified: ${configuration.url}`);
-        bundleUrls.forEach((bundleUrl) => console.log(`- ${bundleUrl}`));
+        console.log(mode + ' server verified: ' + serverConfiguration.url);
+        bundleUrls.forEach(function (bundleUrl) {
+            console.log('- ' + bundleUrl);
+        });
     } catch (error) {
         console.error(error.message);
-        if (output.length > 0) {
-            console.error(output.join('').trim());
+        if (serverOutput.length > 0) {
+            console.error(serverOutput.join('').trim());
         }
         process.exitCode = 1;
     } finally {
-        await stopChild();
+        await stopServerProcess();
     }
 };
 

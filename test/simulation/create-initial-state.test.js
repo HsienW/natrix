@@ -1,19 +1,9 @@
 const {createInitialGameState, DEFAULT_CONFIG} = require('../../src/js/simulation/create-initial-state.js');
 const {GAME_STATE_VERSION} = require('../../src/js/state/game-state.js');
 
-const makeRandom = function (values) {
-    let index = 0;
-    return () => {
-        if (index >= values.length) {
-            return 0;
-        }
-        return values[index++];
-    };
-};
-
 describe('createInitialGameState', () => {
     test('creates state with correct version, tick, and config', () => {
-        const state = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0])});
+        const state = createInitialGameState({seed: 0});
 
         expect(state.version).toBe(GAME_STATE_VERSION);
         expect(state.tick).toBe(0);
@@ -25,8 +15,7 @@ describe('createInitialGameState', () => {
 
     test('merges caller config over defaults', () => {
         const state = createInitialGameState(
-            {mapSize: 21, tickRate: 20, durationTicks: 300},
-            {random: makeRandom([0, 0, 0, 0, 0])},
+            {mapSize: 21, tickRate: 20, durationTicks: 300, seed: 0},
         );
 
         expect(state.config.mapSize).toBe(21);
@@ -36,7 +25,7 @@ describe('createInitialGameState', () => {
     });
 
     test('creates two snakes for a-team and b-team with stationary direction', () => {
-        const state = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0])});
+        const state = createInitialGameState({seed: 0});
 
         expect(state.snakes).toHaveLength(2);
 
@@ -55,81 +44,81 @@ describe('createInitialGameState', () => {
         expect(red.team).toBe('b-team');
         expect(red.alive).toBe(true);
         expect(red.direction).toEqual({x: 0, y: 0});
-        expect(red.body).toEqual([{x: 1, y: 1}]);
+        expect(red.body).toEqual([{x: 2, y: 9}]);
         expect(red.pendingGrowth).toBe(0);
         expect(red.style).toBe('b-snake-body');
     });
 
     test('creates food with count between 1 and 4', () => {
-        const zeroState = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0])});
-        expect(zeroState.food.length).toBeGreaterThanOrEqual(1);
-        expect(zeroState.food.length).toBeLessThanOrEqual(4);
-
-        const maxState = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0.99, 0, 0, 0])});
-        expect(maxState.food.length).toBe(4);
+        for (let seed = 0; seed < 20; seed++) {
+            const state = createInitialGameState({seed});
+            expect(state.food.length).toBeGreaterThanOrEqual(1);
+            expect(state.food.length).toBeLessThanOrEqual(4);
+        }
     });
 
     test('assigns food types from general-expand and mega-expand', () => {
-        const state = createInitialGameState({}, {
-            random: makeRandom([
-                0, 0, 0, 0, // snake positions (2 values per snake)
-                0,    // food count → 1
-                0,    // food type index → 0 (general-expand)
-                0, 0, // food position
-            ]),
-        });
+        const state = createInitialGameState({seed: 0});
 
-        expect(state.food).toHaveLength(1);
-        expect(state.food[0].type).toBe('general-expand');
-        expect(state.food[0].bodyGrowth).toBe(1);
-        expect(state.food[0].style).toBe('general-expand-food');
+        expect(state.food.length).toBeGreaterThanOrEqual(1);
+        for (const foodItem of state.food) {
+            expect(['general-expand', 'mega-expand']).toContain(foodItem.type);
+            expect(typeof foodItem.bodyGrowth).toBe('number');
+            expect(typeof foodItem.style).toBe('string');
+        }
     });
 
     test('creates food with mega-expand type when selected', () => {
-        const state = createInitialGameState({}, {
-            random: makeRandom([
-                0, 0, 0, 0, // snake positions (2 values per snake)
-                0,    // food count → 1
-                0.5,  // food type index → floor(0.5 * 2) = 1 (mega-expand)
-                0, 0, // food position
-            ]),
-        });
+        const state = createInitialGameState({seed: 0});
+        const megaFoods = state.food.filter((f) => f.type === 'mega-expand');
 
-        expect(state.food[0].type).toBe('mega-expand');
-        expect(state.food[0].bodyGrowth).toBe(2);
-        expect(state.food[0].style).toBe('mega-expand-food');
+        expect(megaFoods.length).toBeGreaterThanOrEqual(1);
+        expect(megaFoods[0].bodyGrowth).toBe(2);
+        expect(megaFoods[0].style).toBe('mega-expand-food');
+    });
+
+    test('creates the known food fixture for seed zero', () => {
+        const state = createInitialGameState({seed: 0});
+
+        expect(state.food).toEqual([
+            {
+                id: 'food-0',
+                type: 'mega-expand',
+                position: {x: 24, y: 10},
+                bodyGrowth: 2,
+                style: 'mega-expand-food',
+            },
+        ]);
     });
 
     test('creates food positions within map bounds', () => {
-        const state = createInitialGameState({}, {
-            random: makeRandom([
-                0, 0, 0, 0, // snake positions (2 values per snake)
-                0,       // food count → 1
-                0,       // food type → general-expand
-                0.5, 0.5 // position → floor(0.5 * 41) + 1 = 21
-            ]),
-        });
+        const state = createInitialGameState({seed: 0});
 
-        expect(state.food[0].position).toEqual({x: 21, y: 21});
+        for (const foodItem of state.food) {
+            expect(foodItem.position.x).toBeGreaterThanOrEqual(1);
+            expect(foodItem.position.x).toBeLessThanOrEqual(state.config.mapSize);
+            expect(foodItem.position.y).toBeGreaterThanOrEqual(1);
+            expect(foodItem.position.y).toBeLessThanOrEqual(state.config.mapSize);
+        }
     });
 
     test('initializes scores to zero for both teams', () => {
-        const state = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0])});
+        const state = createInitialGameState({seed: 0});
 
         expect(state.scores).toEqual({'a-team': 0, 'b-team': 0});
     });
 
     test('starts as not finished with no winner', () => {
-        const state = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0])});
+        const state = createInitialGameState({seed: 0});
 
         expect(state.finished).toBe(false);
         expect(state.winner).toBeNull();
         expect(state.finishReason).toBeNull();
-        expect(state.rngState).toBeNull();
+        expect(state.rngState).toBe(222376);
     });
 
     test('contains only plain data with no DOM, class instances, or functions', () => {
-        const state = createInitialGameState({}, {random: makeRandom([0, 0, 0, 0, 0])});
+        const state = createInitialGameState({seed: 0});
         const json = JSON.parse(JSON.stringify(state));
 
         expect(json.version).toBe(state.version);

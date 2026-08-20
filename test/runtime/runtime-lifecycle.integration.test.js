@@ -1,11 +1,7 @@
 const {GameRuntime} = require('../../src/js/runtime/game-runtime.js');
 const {InputBuffer} = require('../../src/js/input/input-buffer.js');
 
-const makeRandom = function () {
-    return () => 0;
-};
-
-const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600};
+const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 
 const createRuntime = function () {
     const frames = [];
@@ -13,7 +9,6 @@ const createRuntime = function () {
 
     const runtime = new GameRuntime({
         config: defaultConfig,
-        environment: {random: makeRandom()},
         inputBuffer: new InputBuffer(),
         renderCallback: () => {},
         stepMs: 100,
@@ -197,6 +192,22 @@ describe('runtime lifecycle integration', () => {
         expect(events[2]).toEqual({ok: true, action: 'RESUME', from: 'PAUSED', to: 'RUNNING'});
         expect(events[3]).toEqual({ok: true, action: 'FINISH', from: 'RUNNING', to: 'FINISHED'});
         expect(events[4]).toEqual({ok: true, action: 'RESET', from: 'FINISHED', to: 'IDLE'});
+    });
+
+    test('START from FINISHED notifies RESET before START', () => {
+        const {runtime} = createRuntime();
+        const transitions = [];
+        runtime.onLifecycleChange((result) => transitions.push(result));
+
+        runtime.dispatch('START');
+        runtime.dispatch('FINISH');
+        transitions.length = 0;
+        runtime.dispatch('START');
+
+        expect(transitions).toEqual([
+            {ok: true, action: 'RESET', from: 'FINISHED', to: 'IDLE'},
+            {ok: true, action: 'START', from: 'IDLE', to: 'RUNNING'},
+        ]);
     });
 
     test('lifecycle listeners are NOT notified on invalid transitions', () => {

@@ -1,22 +1,12 @@
 const {GameRuntime} = require('../../src/js/runtime/game-runtime.js');
 const {InputBuffer} = require('../../src/js/input/input-buffer.js');
 
-const makeRandom = function (values) {
-    let index = 0;
-    return () => {
-        if (index >= values.length) {
-            return 0;
-        }
-        return values[index++];
-    };
-};
-
-const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600};
+const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 
 const createRuntime = function (overrides = {}) {
-    const randomFn = overrides.random || makeRandom([0, 0, 0, 0, 0]);
     const buffer = overrides.inputBuffer || new InputBuffer();
     const renderCallback = overrides.renderCallback || jest.fn();
+    const eventCallback = overrides.eventCallback || jest.fn();
     const frames = [];
     let nextId = 1;
 
@@ -34,16 +24,24 @@ const createRuntime = function (overrides = {}) {
 
     const runtime = new GameRuntime({
         config: overrides.config || defaultConfig,
-        environment: {random: randomFn},
         inputBuffer: buffer,
         renderCallback,
+        eventCallback,
         stepMs: overrides.stepMs || 100,
         maxFrameDeltaMs: overrides.maxFrameDeltaMs || 250,
         requestFrame,
         cancelFrame,
     });
 
-    return {runtime, buffer, renderCallback, frames, requestFrame, cancelFrame};
+    return {
+        runtime,
+        buffer,
+        renderCallback,
+        eventCallback,
+        frames,
+        requestFrame,
+        cancelFrame,
+    };
 };
 
 const startAndInit = function (runtime, frames) {
@@ -89,7 +87,7 @@ describe('GameRuntime', () => {
         expect(requestFrame).toHaveBeenCalledTimes(1);
     });
 
-    test('start does nothing when match is finished', () => {
+    test('start from finished resets and starts a new match', () => {
         const {runtime, frames, requestFrame} = createRuntime();
 
         runtime.start();
@@ -102,8 +100,10 @@ describe('GameRuntime', () => {
 
         runtime.start();
 
-        expect(runtime.isRunning()).toBe(false);
-        expect(requestFrame).not.toHaveBeenCalled();
+        expect(runtime.isRunning()).toBe(true);
+        expect(runtime.getLifecycleState()).toBe('RUNNING');
+        expect(runtime.getState().finished).toBe(false);
+        expect(requestFrame).toHaveBeenCalledTimes(1);
     });
 
     test('pause stops the loop and cancels the pending frame', () => {
@@ -136,6 +136,7 @@ describe('GameRuntime', () => {
         startAndInit(runtime, frames);
         runNextFrame(frames, 200);
 
+        runtime.stop();
         runtime.reset();
 
         expect(buffer.size()).toBe(0);
@@ -226,11 +227,14 @@ describe('GameRuntime', () => {
     });
 
     test('event log collects domain events from simulation steps', () => {
-        const {runtime, buffer, frames} = createRuntime();
+        const {runtime, buffer} = createRuntime();
+
+        // Place snake directly on food so a FOOD_EATEN event fires
+        const state = runtime.getState();
+        state.snakes[0].body[0] = {x: state.food[0].position.x, y: state.food[0].position.y};
 
         buffer.push({type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'});
-        startAndInit(runtime, frames);
-        runNextFrame(frames, 150);
+        runtime.handleUpdate();
 
         const events = runtime.getEventLog();
         expect(events.some((e) => e.type === 'FOOD_EATEN')).toBe(true);
@@ -245,17 +249,27 @@ describe('GameRuntime', () => {
         expect(logA).toEqual(logB);
     });
 
-    test('throws when config is missing', () => {
-        expect(() => new GameRuntime({
-            environment: {random: () => 0},
-            inputBuffer: new InputBuffer(),
-        })).toThrow(TypeError);
+    test('stops the loop and forwards events when the match finishes', () => {
+        const eventCallback = jest.fn();
+        const {runtime, frames} = createRuntime({
+            config: {...defaultConfig, durationTicks: 1},
+            eventCallback,
+        });
+
+        startAndInit(runtime, frames);
+        runNextFrame(frames, 100);
+
+        expect(runtime.getLifecycleState()).toBe('FINISHED');
+        expect(runtime.isRunning()).toBe(false);
+        expect(frames).toHaveLength(0);
+        expect(eventCallback).toHaveBeenCalledWith(expect.objectContaining({
+            type: 'MATCH_FINISHED',
+            reason: 'draw',
+        }));
     });
 
-    test('throws when environment.random is missing', () => {
+    test('throws when config is missing', () => {
         expect(() => new GameRuntime({
-            config: defaultConfig,
-            environment: {},
             inputBuffer: new InputBuffer(),
         })).toThrow(TypeError);
     });
@@ -263,7 +277,6 @@ describe('GameRuntime', () => {
     test('throws when inputBuffer is missing', () => {
         expect(() => new GameRuntime({
             config: defaultConfig,
-            environment: {random: () => 0},
         })).toThrow(TypeError);
     });
 });

@@ -18,13 +18,18 @@ const gameMarkup = `
     </div>
 `;
 
-const popFrame = function (scheduledFrames) {
-    const keys = Array.from(scheduledFrames.keys());
-    expect(keys.length).toBeGreaterThan(0);
-    const id = keys[0];
-    const cb = scheduledFrames.get(id);
-    scheduledFrames.delete(id);
-    return {id, cb};
+const takeNextFrame = function (scheduledFrames) {
+    const frameIds = Array.from(scheduledFrames.keys());
+    expect(frameIds.length).toBeGreaterThan(0);
+
+    const frameId = frameIds[0];
+    const callback = scheduledFrames.get(frameId);
+    scheduledFrames.delete(frameId);
+
+    return {
+        frameId: frameId,
+        callback: callback,
+    };
 };
 
 describe('gameplay smoke', () => {
@@ -36,7 +41,6 @@ describe('gameplay smoke', () => {
         const cancelledFrames = new Set();
         let nextFrameId = 1;
 
-        jest.spyOn(Math, 'random').mockReturnValue(0);
         global.confirm = jest.fn(() => true);
         global.requestAnimationFrame = jest.fn((callback) => {
             const frameId = nextFrameId++;
@@ -64,29 +68,30 @@ describe('gameplay smoke', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyD'}));
 
         const stateBeforeStep = gameRuntime.getState();
-        const aSnakeBefore = stateBeforeStep.snakes.find((s) => s.id === 'a-snake');
-        const bSnakeBefore = stateBeforeStep.snakes.find((s) => s.id === 'b-snake');
+        const aSnakeBefore = stateBeforeStep.snakes.find((snake) => snake.id === 'a-snake');
+        const bSnakeBefore = stateBeforeStep.snakes.find((snake) => snake.id === 'b-snake');
         expect(aSnakeBefore.direction).toEqual({x: 0, y: 0});
         expect(bSnakeBefore.direction).toEqual({x: 0, y: 0});
 
-        const initFrame = popFrame(scheduledFrames);
-        initFrame.cb(0);
+        const initFrame = takeNextFrame(scheduledFrames);
+        initFrame.callback(0);
 
-        const stepFrame = popFrame(scheduledFrames);
-        stepFrame.cb(102);
+        const stepFrame = takeNextFrame(scheduledFrames);
+        stepFrame.callback(102);
 
         const stateAfterStep = gameRuntime.getState();
-        const aSnakeAfter = stateAfterStep.snakes.find((s) => s.id === 'a-snake');
-        const bSnakeAfter = stateAfterStep.snakes.find((s) => s.id === 'b-snake');
+        const aSnakeAfter = stateAfterStep.snakes.find((snake) => snake.id === 'a-snake');
+        const bSnakeAfter = stateAfterStep.snakes.find((snake) => snake.id === 'b-snake');
         expect(aSnakeAfter.direction).toEqual({x: 1, y: 0});
         expect(bSnakeAfter.direction).toEqual({x: 1, y: 0});
         expect(aSnakeAfter.body[0]).toEqual({x: 2, y: 1});
-        expect(bSnakeAfter.body[0]).toEqual({x: 2, y: 1});
-        expect(document.querySelector('.a-team').textContent).toBe('1');
-        expect(document.querySelector('.b-team').textContent).toBe('1');
-        expect(document.querySelectorAll('.a-snake-body')).toHaveLength(2);
-        expect(document.querySelectorAll('.b-snake-body')).toHaveLength(2);
-        expect(document.querySelectorAll('.general-expand-food')).toHaveLength(1);
+        expect(bSnakeAfter.body[0]).toEqual({x: 3, y: 9});
+        expect(document.querySelector('.a-team').textContent).toBe('0');
+        expect(document.querySelector('.b-team').textContent).toBe('0');
+        expect(document.querySelectorAll('.a-snake-body')).toHaveLength(1);
+        expect(document.querySelectorAll('.b-snake-body')).toHaveLength(1);
+        expect(document.querySelectorAll('.mega-expand-food')).toHaveLength(1);
+        expect(document.querySelectorAll('.general-expand-food')).toHaveLength(0);
 
         document.querySelector('.pause-button').click();
         expect(gameRuntime.getLifecycleState()).toBe('PAUSED');
@@ -95,21 +100,21 @@ describe('gameplay smoke', () => {
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'ArrowDown'}));
         window.dispatchEvent(new KeyboardEvent('keydown', {code: 'KeyS'}));
         const stateWhilePaused = gameRuntime.getState();
-        const aSnakePaused = stateWhilePaused.snakes.find((s) => s.id === 'a-snake');
+        const aSnakePaused = stateWhilePaused.snakes.find((snake) => snake.id === 'a-snake');
         expect(aSnakePaused.body[0]).toEqual({x: 2, y: 1});
 
         document.querySelector('.start-button').click();
         expect(gameRuntime.getLifecycleState()).toBe('RUNNING');
         expect(gameRuntime.isRunning()).toBe(true);
 
-        const resumeInitFrame = popFrame(scheduledFrames);
-        resumeInitFrame.cb(150);
+        const resumeInitFrame = takeNextFrame(scheduledFrames);
+        resumeInitFrame.callback(150);
 
-        const resumeStepFrame = popFrame(scheduledFrames);
-        resumeStepFrame.cb(252);
+        const resumeStepFrame = takeNextFrame(scheduledFrames);
+        resumeStepFrame.callback(252);
 
         const stateAfterResume = gameRuntime.getState();
-        const aSnakeResumed = stateAfterResume.snakes.find((s) => s.id === 'a-snake');
+        const aSnakeResumed = stateAfterResume.snakes.find((snake) => snake.id === 'a-snake');
         expect(aSnakeResumed.body[0]).toEqual({x: 2, y: 2});
 
         document.querySelector('.pause-button').click();
