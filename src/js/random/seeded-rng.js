@@ -1,7 +1,7 @@
 // A small linear congruential generator is sufficient for food placement.
 // One million keeps state snapshots readable, while 41 and 17 let the
 // generator visit every state in the range before the sequence repeats.
-const RANDOM_STATE_RANGE = 1_000_000;
+const RANDOM_STATE_RANGE = 1000000;
 const RANDOM_STEP_MULTIPLIER = 41;
 const RANDOM_STEP_INCREMENT = 17;
 
