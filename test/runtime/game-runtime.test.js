@@ -142,6 +142,7 @@ describe('GameRuntime', () => {
         expect(buffer.size()).toBe(0);
         expect(runtime.getState().tick).toBe(0);
         expect(runtime.getEventLog()).toEqual([]);
+        expect(runtime.getCommandLog()).toEqual([]);
         expect(runtime.getSnapshot().tick).toBe(0);
         expect(runtime.isRunning()).toBe(false);
     });
@@ -158,6 +159,51 @@ describe('GameRuntime', () => {
 
         const aSnake = runtime.getState().snakes.find((s) => s.id === 'a-snake');
         expect(aSnake.direction).toEqual({x: 1, y: 0});
+    });
+
+    test('records commands with the tick that is about to run', () => {
+        const {runtime, buffer} = createRuntime();
+
+        buffer.push({type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'});
+        buffer.push({type: 'CHANGE_DIRECTION', playerId: 'b-snake', direction: 'LEFT'});
+        runtime.handleUpdate();
+
+        buffer.push({type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'DOWN'});
+        runtime.handleUpdate();
+
+        expect(runtime.getCommandLog()).toEqual([
+            {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT', tick: 0},
+            {type: 'CHANGE_DIRECTION', playerId: 'b-snake', direction: 'LEFT', tick: 0},
+            {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'DOWN', tick: 1},
+        ]);
+    });
+
+    test('records commands even when simulation rejects their values', () => {
+        const {runtime, buffer} = createRuntime();
+
+        buffer.push({
+            type: 'CHANGE_DIRECTION',
+            playerId: 'missing-snake',
+            direction: 'SIDEWAYS',
+        });
+        runtime.handleUpdate();
+
+        expect(runtime.getCommandLog()).toEqual([{
+            type: 'CHANGE_DIRECTION',
+            playerId: 'missing-snake',
+            direction: 'SIDEWAYS',
+            tick: 0,
+        }]);
+    });
+
+    test('render and pause do not create command entries', () => {
+        const {runtime} = createRuntime();
+
+        runtime.handleRender(0.5);
+        runtime.start();
+        runtime.pause();
+
+        expect(runtime.getCommandLog()).toEqual([]);
     });
 
     test('handleRender calls render callback with snapshot and alpha', () => {
