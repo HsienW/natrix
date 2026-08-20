@@ -20,11 +20,13 @@ const checkPositionOutsideMap = (position) => {
         || position.y > mapSize;
 }
 
+// ignoreHead 用來忽略 bodyData 中拿到自己蛇頭的卡控
 const checkPositionOnSnakeBody = (position, snakeBody) => {
     if (checkArrayIsEmpty(snakeBody)) {
         return null;
     }
 
+    // 回傳撞到自己的蛇
     return snakeBody.some((bodyItem, index) => {
         if (index === 0) {
             return false;
@@ -39,6 +41,7 @@ const checkFoodOnSnakeBody = (food, allSnake) => {
         return null;
     }
 
+    // 回傳吃到的蛇跟那顆食物
     const matchingSnakes = [];
     const foodPosition = food.getFoodPosition();
 
@@ -62,6 +65,7 @@ const checkOnlySurviveTeam = (allSnake) => {
         return null;
     }
 
+    // 回傳剩下唯一有玩家存活的 Snake Team
     const survivingTeams = [];
 
     for (const snakeTeam in allSnake) {

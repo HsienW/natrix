@@ -106,7 +106,7 @@ const roleItemMediator = (function () {
         return null;
     }
 
-    // 呼叫同一角色群組內所有 item 的指定 method
+    //處理某種角色, 全部的 item 需要一起呼叫的
     const callRoleItemMethod = function (role, methodName) {
         for (const roleType in role) {
             const items = role[roleType];
@@ -117,6 +117,7 @@ const roleItemMediator = (function () {
         }
     }
 
+    //處理呼叫參數的介面
     const getData = function (action) {
         return operations[action].call(this);
     }

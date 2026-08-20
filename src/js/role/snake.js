@@ -69,6 +69,7 @@ Snake.prototype.checkSnakeItemDead = function () {
 }
 
 Snake.prototype.expandSnakeBody = function (bodyGrowth) {
+    // 增加的身體長度等於拿到的分數
     this.newSnakeBody += bodyGrowth;
 }
 
@@ -77,7 +78,7 @@ Snake.prototype.clearSnakeBody = function () {
 }
 
 Snake.prototype.addSnakeBody = function () {
-    // 每次迴圈都從目前的尾端複製一節身體
+    // 每次迴圈都會把目前蛇尾位置 push 進 snakeBody
     for (let bodyIndex = 0; bodyIndex < this.newSnakeBody; bodyIndex++) {
         const tailPosition = this.snakeBody[this.snakeBody.length - 1];
         this.snakeBody.push({...tailPosition});
@@ -92,14 +93,17 @@ Snake.prototype.updateSnakeItemPosition = function () {
     }
 
     this.addSnakeBody();
+    // 取得蛇目前方向的 x y 座標
     const currentDirection = this.getSnakeDirection();
 
+    // 因為蛇頭會往前移一格, 所以身體也要跟著移一格
     // 從尾端往前複製，避免前段座標在複製前被覆蓋
     for (let bodyIndex = this.snakeBody.length - 2; bodyIndex >= 0; bodyIndex--) {
+        // 將本來的 bodyIndex 位子的身體賦予給 bodyIndex+1, 達成往前移一格
         this.snakeBody[bodyIndex + 1] = {...this.snakeBody[bodyIndex]};
     }
 
-    // 完成身體位移後，再依目前方向移動蛇頭
+    // 將新方向的 x y 座標賦予給蛇頭
     this.snakeBody[0].x += currentDirection.x;
     this.snakeBody[0].y += currentDirection.y;
 }
