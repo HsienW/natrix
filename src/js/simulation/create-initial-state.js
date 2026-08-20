@@ -1,6 +1,6 @@
 import {GAME_STATE_VERSION, createEmptyScores} from '../state/game-state.js';
 import {FOOD_TYPE_CONFIG} from './scoring.js';
-import {createRng} from './rng.js';
+import {createSeededRng} from '../random/seeded-rng.js';
 
 const DEFAULT_CONFIG = {
     mapSize: 41,
@@ -56,7 +56,7 @@ const createInitialSnakes = function (rng, mapSize) {
 
 const createInitialGameState = function (config) {
     const mergedConfig = {...DEFAULT_CONFIG, ...config};
-    const rng = createRng(mergedConfig.seed);
+    const rng = createSeededRng(mergedConfig.seed);
 
     const snakes = createInitialSnakes(rng, mergedConfig.mapSize);
     const food = createInitialFood(rng, mergedConfig.mapSize);
@@ -77,7 +77,7 @@ const createInitialGameState = function (config) {
         finished: false,
         winner: null,
         finishReason: null,
-        rngState: (mergedConfig.seed + 0x6D2B79F5) | 0,
+        rngState: rng.getState(),
     };
 };
 

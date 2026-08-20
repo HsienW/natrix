@@ -77,6 +77,27 @@ describe('createInitialGameState', () => {
         expect(megaFoods[0].style).toBe('mega-expand-food');
     });
 
+    test('creates the known food fixture for seed zero', () => {
+        const state = createInitialGameState({seed: 0});
+
+        expect(state.food).toEqual([
+            {
+                id: 'food-0',
+                type: 'mega-expand',
+                position: {x: 26, y: 27},
+                bodyGrowth: 2,
+                style: 'mega-expand-food',
+            },
+            {
+                id: 'food-1',
+                type: 'general-expand',
+                position: {x: 24, y: 11},
+                bodyGrowth: 1,
+                style: 'general-expand-food',
+            },
+        ]);
+    });
+
     test('creates food positions within map bounds', () => {
         const state = createInitialGameState({seed: 0});
 
@@ -100,7 +121,7 @@ describe('createInitialGameState', () => {
         expect(state.finished).toBe(false);
         expect(state.winner).toBeNull();
         expect(state.finishReason).toBeNull();
-        expect(typeof state.rngState).toBe('number');
+        expect(state.rngState).toBe(-1327612537);
     });
 
     test('contains only plain data with no DOM, class instances, or functions', () => {

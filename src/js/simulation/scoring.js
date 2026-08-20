@@ -1,4 +1,4 @@
-import {generateRandomValue} from './rng.js';
+import {nextRandomValue} from '../random/seeded-rng.js';
 
 const FOOD_TYPE_CONFIG = {
     'general-expand': {bodyGrowth: 1, style: 'general-expand-food'},
@@ -6,8 +6,8 @@ const FOOD_TYPE_CONFIG = {
 };
 
 const relocateFood = function (foodItem, rngState, mapSize) {
-    var xResult = generateRandomValue(rngState);
-    var yResult = generateRandomValue(xResult.nextState);
+    const xResult = nextRandomValue(rngState);
+    const yResult = nextRandomValue(xResult.nextState);
 
     return {
         food: {
@@ -22,14 +22,14 @@ const relocateFood = function (foodItem, rngState, mapSize) {
 };
 
 const resolveScoring = function (state) {
-    var events = [];
-    var scores = {...state.scores};
-    var foodUpdated = false;
-    var rngState = state.rngState;
-    var mapSize = state.config.mapSize;
+    const events = [];
+    const scores = {...state.scores};
+    let foodUpdated = false;
+    let rngState = state.rngState;
+    const mapSize = state.config.mapSize;
 
-    var newFood = state.food.map(function (foodItem) {
-        var eatingSnakes = state.snakes.filter(function (snake) {
+    const newFood = state.food.map(function (foodItem) {
+        const eatingSnakes = state.snakes.filter(function (snake) {
             return snake.alive
                 && snake.body.length > 0
                 && snake.body[0].x === foodItem.position.x
@@ -53,7 +53,7 @@ const resolveScoring = function (state) {
             });
         });
 
-        var relocation = relocateFood(foodItem, rngState, mapSize);
+        const relocation = relocateFood(foodItem, rngState, mapSize);
         rngState = relocation.nextState;
 
         return relocation.food;
@@ -61,13 +61,13 @@ const resolveScoring = function (state) {
 
     return {
         snakes: state.snakes.map(function (snake) {
-            var eatenForSnake = events.filter(
+            const eatenForSnake = events.filter(
                 function (event) { return event.type === 'FOOD_EATEN' && event.playerId === snake.id; },
             );
             if (eatenForSnake.length === 0) {
                 return snake;
             }
-            var totalGrowth = eatenForSnake.reduce(function (sum, event) {
+            const totalGrowth = eatenForSnake.reduce(function (sum, event) {
                 return sum + event.bodyGrowth;
             }, 0);
             return {...snake, pendingGrowth: snake.pendingGrowth + totalGrowth};
