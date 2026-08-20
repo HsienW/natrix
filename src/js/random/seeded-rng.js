@@ -40,6 +40,7 @@ const createSeededRng = function (seed) {
             state = result.nextState;
             return result.value;
         },
+        // State is exposed as plain data so a simulation can resume the same sequence.
         getState: function () {
             return state;
         },
