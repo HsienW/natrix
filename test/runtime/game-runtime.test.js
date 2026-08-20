@@ -196,6 +196,24 @@ describe('GameRuntime', () => {
         }]);
     });
 
+    test('creates a replay payload from authoritative config and recorded commands', () => {
+        const {runtime, buffer} = createRuntime();
+
+        buffer.push({type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'});
+        runtime.handleUpdate();
+
+        const payload = runtime.getReplayPayload();
+
+        expect(payload).toEqual({
+            version: 1,
+            seed: 0,
+            config: {mapSize: 41, tickRate: 10, durationTicks: 600},
+            commands: [
+                {type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT', tick: 0},
+            ],
+        });
+    });
+
     test('render and pause do not create command entries', () => {
         const {runtime} = createRuntime();
 
