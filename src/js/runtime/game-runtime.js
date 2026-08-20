@@ -2,6 +2,7 @@ import {FixedTimestepLoop} from './fixed-timestep-loop.js';
 import {createSimulation} from '../simulation/simulation.js';
 import {RuntimeStateMachine} from './runtime-state-machine.js';
 import {RUNTIME_STATES, RUNTIME_ACTIONS} from './runtime-state.js';
+import {CommandRecorder} from '../replay/command-recorder.js';
 
 const DEFAULT_RENDER = function () {};
 const DEFAULT_EVENT_HANDLER = function () {};
@@ -10,6 +11,7 @@ class GameRuntime {
     constructor({
         config,
         inputBuffer,
+        commandRecorder = new CommandRecorder(),
         renderCallback = DEFAULT_RENDER,
         eventCallback = DEFAULT_EVENT_HANDLER,
         stepMs,
@@ -23,6 +25,12 @@ class GameRuntime {
         if (!inputBuffer || typeof inputBuffer.drain !== 'function') {
             throw new TypeError('GameRuntime requires an input buffer.');
         }
+        if (!commandRecorder
+            || typeof commandRecorder.record !== 'function'
+            || typeof commandRecorder.entries !== 'function'
+            || typeof commandRecorder.clear !== 'function') {
+            throw new TypeError('GameRuntime requires a command recorder.');
+        }
         if (typeof renderCallback !== 'function') {
             throw new TypeError('GameRuntime render callback must be a function.');
         }
@@ -32,6 +40,7 @@ class GameRuntime {
 
         this.config = config;
         this.inputBuffer = inputBuffer;
+        this.commandRecorder = commandRecorder;
         this.renderCallback = renderCallback;
         this.eventCallback = eventCallback;
         this.eventLog = [];
@@ -138,6 +147,7 @@ class GameRuntime {
     resetRuntime() {
         this.loop.stop();
         this.inputBuffer.clear();
+        this.commandRecorder.clear();
         this.simulation.reset(this.config);
         this.eventLog = [];
         this.currentAlpha = 0;
@@ -160,8 +170,14 @@ class GameRuntime {
         return this.eventLog.slice();
     }
 
+    getCommandLog() {
+        return this.commandRecorder.entries();
+    }
+
     handleUpdate() {
         const commands = this.inputBuffer.drain();
+        const tick = this.simulation.getState().tick;
+        this.commandRecorder.record(tick, commands);
         const result = this.simulation.step(commands);
         this.eventLog.push(...result.events);
 
