@@ -79,6 +79,8 @@ const handleGameEvent = function (event) {
     noticeConfirm(winnerName + ' is winner!');
 };
 
+/** State Pattern **/
+// 設定初始狀態
 const gameRuntime = new GameRuntime({
     config: {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0},
     inputBuffer: inputBuffer,
@@ -88,6 +90,10 @@ const gameRuntime = new GameRuntime({
 
 mainGame.initMainGameView();
 
+// 綁定每個狀態之下的 click event
+// 將初始化取得的 main 實例的參照, 保存在 mainGame 變數中,
+// 以防 onclick event 發生時 this 指向被修改成 button dom
+// 將每個 button 點擊後對應要做的事, 委託出去給 GameRuntime 的 lifecycle handler
 mainGame.startButton.onclick = function () {
     if (gameRuntime.getLifecycleState() === RUNTIME_STATES.PAUSED) {
         gameRuntime.dispatch(RUNTIME_ACTIONS.RESUME);

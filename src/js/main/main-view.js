@@ -2,7 +2,8 @@
 import {mainGame} from './main.js';
 import {mainGameTimeType} from '../main-config/main-game-time.js';
 
-// mainView 負責管理遊戲 DOM 的顯示操作。
+// mainViewMediator 負責中介管理遊戲 dom 相關的行為
+// 例如: bind dom 相關的操作等等...
 const mainView = (function () {
     let controlButtonsDom = null;
     let countdownDom = null;
@@ -41,7 +42,7 @@ const mainView = (function () {
         bTeamScoreDom.innerHTML = '<div>' + value + '</div>';
     }
 
-    // 提供 mediator 共用的 action dispatch 介面。
+    //處理呼叫參數的介面
     const callAction = function () {
         const action = Array.prototype.shift.call(arguments);
         operations[action].apply(this, arguments);
