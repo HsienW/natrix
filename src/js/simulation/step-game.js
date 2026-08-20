@@ -32,6 +32,7 @@ const stepGame = function (previousState, commands) {
 
     const survival = checkSurvivingTeam(state.snakes);
     if (survival) {
+        // Snake 的 win/lose 狀態由 simulation 統一保存，不再放在單一 Snake。
         state = {
             ...state,
             finished: true,
