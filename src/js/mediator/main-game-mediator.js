@@ -1,7 +1,6 @@
 /** Mediator Pattern **/
 
-import {mainGame, gameRuntime} from '../main/main.js';
-import {mainView} from '../main/main-view.js';
+import {gameRuntime} from '../main/main.js';
 import {RUNTIME_ACTIONS, RUNTIME_STATES} from '../runtime/runtime-state.js';
 
 // mainGameMediator 負責中介管理遊戲進行相關的行為
@@ -18,8 +17,6 @@ const mainGameMediator = (function () {
         if (gameRuntime.getLifecycleState() === RUNTIME_STATES.FINISHED) {
             gameRuntime.dispatch(RUNTIME_ACTIONS.RESET);
         }
-        mainView.callAction('initCountdownDom');
-        mainView.callAction('initTeamScoreDom');
     }
 
     operations.gameStart = function () {

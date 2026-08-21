@@ -72,10 +72,6 @@ const roleItemMediator = (function () {
         callRoleItemMethod(allFood, 'updateFoodItem');
     }
 
-    operations.renderAllFood = function () {
-        callRoleItemMethod(allFood, 'renderFoodItem');
-    }
-
     operations.initAllSnake = function () {
         initSnakes();
     }
@@ -86,10 +82,6 @@ const roleItemMediator = (function () {
 
     operations.updateAllSnakePosition = function () {
         callRoleItemMethod(allSnake, 'updateSnakeItemPosition');
-    }
-
-    operations.renderAllSnake = function () {
-        callRoleItemMethod(allSnake, 'renderSnakeItem');
     }
 
     const findSnakeByPlayerId = function (playerId) {
