@@ -1,6 +1,5 @@
 import {snakeDeadRuleChecker} from '../checker/checker.js';
 import {roleItemMediator} from '../mediator/role-item-mediator.js';
-import {map} from './map.js';
 import {snakeTypeInfo} from '../role-config/snake-type.js';
 import {getDirectionVector} from '../role-config/snake-operation.js';
 
@@ -106,20 +105,6 @@ Snake.prototype.updateSnakeItemPosition = function () {
     // 將新方向的 x y 座標賦予給蛇頭
     this.snakeBody[0].x += currentDirection.x;
     this.snakeBody[0].y += currentDirection.y;
-}
-
-Snake.prototype.renderSnakeItem = function () {
-    if (this.snakeDead) {
-        return;
-    }
-
-    this.snakeBody.forEach((bodyItem) => {
-        const snakeElement = document.createElement('div');
-        snakeElement.style.gridRowStart = bodyItem.y;
-        snakeElement.style.gridColumnStart = bodyItem.x;
-        snakeElement.classList.add(this.snakeStyleName);
-        map.gameMap.appendChild(snakeElement);
-    })
 }
 
 const snakeFactory = function (

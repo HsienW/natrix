@@ -2,7 +2,6 @@ import {getRandomPosition, getRandomFoodAmount, getRandomFoodType} from '../comm
 import {checkFoodOnSnakeBody} from '../common/role-util.js';
 import {foodTypeInfo} from '../role-config/food-type.js';
 import {roleItemMediator} from '../mediator/role-item-mediator.js';
-import {map} from './map.js';
 
 const Food = function (foodPosition, foodType, foodStyleName, bodyExpandRate, speedRate) {
     this.foodPosition = foodPosition;
@@ -32,22 +31,14 @@ Food.prototype.getFoodBodyExpandRate = function () {
 
 Food.prototype.updateFoodItem = function () {
     // 檢查蛇是否有吃到食物
-    let allSnake = roleItemMediator.getData('getAllSnake');
-    let eatFoodSnakes = checkFoodOnSnakeBody(this, allSnake);
+    const allSnake = roleItemMediator.getData('getAllSnake');
+    const eatFoodSnakes = checkFoodOnSnakeBody(this, allSnake);
     if (eatFoodSnakes.length !== 0) {
         roleItemMediator.callAction('snakeEatFood', this, eatFoodSnakes);
         // 有吃到的話就重新 render 食物的位子
         this.foodPosition = this.createFoodPosition();
     }
     eatFoodSnakes.length = 0;
-}
-
-Food.prototype.renderFoodItem = function () {
-    const foodElement = document.createElement('div');
-    foodElement.style.gridRowStart = this.foodPosition.y;
-    foodElement.style.gridColumnStart = this.foodPosition.x;
-    foodElement.classList.add(this.foodStyleName);
-    map.gameMap.appendChild(foodElement);
 }
 
 const foodFactory = function (foodPosition, foodType, foodStyleName, bodyExpandRate, speedRate) {

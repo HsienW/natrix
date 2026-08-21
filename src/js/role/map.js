@@ -1,5 +1,4 @@
-const Map = function (elementId, mapSize) {
-    this.gameMap = document.getElementById(elementId);
+const Map = function (mapSize) {
     this.mapSize = mapSize;
 }
 
@@ -7,11 +6,7 @@ Map.prototype.getMapSize = function () {
     return this.mapSize;
 }
 
-Map.prototype.renderMap = function () {
-    this.gameMap.innerHTML = '';
-}
-
-const map = new Map('game-map', 41);
+const map = new Map(41);
 const mapSize = map.getMapSize();
 
 export {
