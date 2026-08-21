@@ -6,6 +6,7 @@ const gameMarkup = `
             <div class="team-scoreboard b-team"></div>
         </div>
         <div id="game-map"></div>
+        <canvas id="game-canvas" hidden></canvas>
         <div class="game-control-area area-margin-top">
             <div class="team"></div>
             <div class="control-button">
@@ -33,6 +34,10 @@ const takeNextFrame = function (scheduledFrames) {
 };
 
 describe('gameplay smoke', () => {
+    afterEach(() => {
+        window.history.replaceState({}, '', '/');
+    });
+
     test('buffers input while moving, pausing, resuming, and restarting a match', () => {
         jest.resetModules();
         document.body.innerHTML = gameMarkup;
@@ -128,5 +133,53 @@ describe('gameplay smoke', () => {
             return eventName === 'keydown';
         });
         expect(keydownRegistrations).toHaveLength(1);
+    });
+
+    test('initializes and renders gameplay in Canvas mode', () => {
+        jest.resetModules();
+        window.history.replaceState({}, '', '/?renderer=canvas');
+        document.body.innerHTML = gameMarkup;
+
+        const scheduledFrames = new Map();
+        let nextFrameId = 1;
+        const canvas = document.getElementById('game-canvas');
+        const context = {
+            setTransform: jest.fn(),
+            fillRect: jest.fn(),
+            strokeRect: jest.fn(),
+            beginPath: jest.fn(),
+            arc: jest.fn(),
+            fill: jest.fn(),
+            stroke: jest.fn(),
+            clearRect: jest.fn(),
+        };
+
+        canvas.getContext = jest.fn(() => context);
+        canvas.getBoundingClientRect = jest.fn(() => ({width: 410, height: 410}));
+        global.confirm = jest.fn(() => true);
+        global.requestAnimationFrame = jest.fn((callback) => {
+            const frameId = nextFrameId++;
+            scheduledFrames.set(frameId, callback);
+            return frameId;
+        });
+        global.cancelAnimationFrame = jest.fn((frameId) => {
+            scheduledFrames.delete(frameId);
+        });
+
+        const {gameRuntime} = require('../../src/js/main/main.js');
+
+        expect(document.getElementById('game-map').hidden).toBe(true);
+        expect(canvas.hidden).toBe(false);
+        expect(canvas.width).toBe(410);
+        expect(gameRuntime.getLifecycleState()).toBe('IDLE');
+
+        document.querySelector('.start-button').click();
+        const initFrame = takeNextFrame(scheduledFrames);
+        initFrame.callback(0);
+
+        expect(context.fillRect).toHaveBeenCalled();
+        expect(context.arc).toHaveBeenCalled();
+
+        gameRuntime.destroy();
     });
 });
