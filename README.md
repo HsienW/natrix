@@ -92,7 +92,12 @@ IDLE --START--> RUNNING --PAUSE--> PAUSED --RESUME--> RUNNING
 - Paused elapsed wall time is not added on resume.
 - Lifecycle listeners are notified on each successful transition.
 
-M2 (seeded RNG, command recording, replay, state-hash suite) remains planned for PR-07 through PR-10.
+### Deterministic simulation and replay
+
+- Seeded RNG makes initial placement and food relocation reproducible.
+- Player commands are recorded against logical simulation ticks.
+- Versioned replay payloads run synchronously without browser or renderer APIs.
+- Canonical state fingerprints verify live runtime and replay parity.
 
 ## Game rule
 ![image](https://user-images.githubusercontent.com/20525933/132933824-1c4b95b5-2d8f-46ab-9996-38121f5935c2.png)
