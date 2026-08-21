@@ -5,7 +5,6 @@ import {checkValueIsEmpty, checkObjectIsEmpty} from '../common/util.js';
 import {halfwayFinishRuleChecker} from '../checker/checker.js';
 import {mainGameMediator} from './main-game-mediator.js';
 import {roleItemMediator} from './role-item-mediator.js';
-import {mainView} from '../main/main-view.js';
 
 // teamMediator 負責中介管理團隊相關的行為
 // 例如: 初始計分、團隊加分、團隊勝利判定等等...
@@ -33,8 +32,6 @@ const teamMediator = (function () {
             return;
         }
         allTeamScore[team] = allTeamScore[team] + score;
-        mainView.callAction('updateATeamScoreDom', allTeamScore['a-team']);
-        mainView.callAction('updateBTeamScoreDom', allTeamScore['b-team']);
     }
 
     operations.clearTeamScore = function () {

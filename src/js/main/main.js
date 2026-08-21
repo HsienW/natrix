@@ -5,6 +5,8 @@ import {keyboardInput} from '../input/keyboard-input.js';
 import {inputBuffer} from '../input/input-buffer.js';
 import {GameRuntime} from '../runtime/game-runtime.js';
 import {RUNTIME_ACTIONS, RUNTIME_STATES} from '../runtime/runtime-state.js';
+import {DOMRenderer} from '../render/dom-renderer.js';
+import {GameHud} from '../render/game-hud.js';
 import {noticeConfirm} from '../common/notice.js';
 import '../../style/reset.css';
 import '../../style/main.css';
@@ -19,65 +21,29 @@ const Main = function () {
 
 Main.prototype.initMainGameView = function () {
     mainView.callAction('initControlButtonsDom');
-    mainView.callAction('initCountdownDom');
-    mainView.callAction('initTeamScoreDom');
 }
 
 const mainGame = new Main();
+const domRenderer = new DOMRenderer('game-map');
+const gameHud = new GameHud();
 
-const renderFromSnapshot = function (snapshot) {
-    const gameMap = document.getElementById('game-map');
-    if (!gameMap) {
-        return;
-    }
-
-    gameMap.innerHTML = '';
-
-    snapshot.food.forEach((foodItem) => {
-        const foodElement = document.createElement('div');
-        foodElement.style.gridRowStart = foodItem.position.y;
-        foodElement.style.gridColumnStart = foodItem.position.x;
-        foodElement.classList.add(foodItem.style);
-        gameMap.appendChild(foodElement);
-    });
-
-    snapshot.snakes.forEach((snake) => {
-        if (!snake.alive) {
-            return;
-        }
-        snake.body.forEach((segment) => {
-            const snakeElement = document.createElement('div');
-            snakeElement.style.gridRowStart = segment.y;
-            snakeElement.style.gridColumnStart = segment.x;
-            snakeElement.classList.add(snake.style);
-            gameMap.appendChild(snakeElement);
-        });
-    });
-
-    const countdownDom = document.querySelector('.game-countdown');
-    if (countdownDom) {
-        countdownDom.innerHTML = '<div>' + snapshot.remainingSeconds + '</div>';
-    }
-
-    const aTeamScoreDom = document.querySelector('.a-team');
-    if (aTeamScoreDom) {
-        aTeamScoreDom.innerHTML = '<div>' + snapshot.score.blue + '</div>';
-    }
-
-    const bTeamScoreDom = document.querySelector('.b-team');
-    if (bTeamScoreDom) {
-        bTeamScoreDom.innerHTML = '<div>' + snapshot.score.red + '</div>';
-    }
-};
-
-// 將此臨時 DOM 映射到 DOMRenderer。
-const temporaryDomRenderer = {
-    init: function () {},
-    render: function (snapshot) {
-        renderFromSnapshot(snapshot);
+const browserRenderer = {
+    init: function (config) {
+        domRenderer.init(config);
+        gameHud.init(config);
     },
-    resize: function () {},
-    destroy: function () {},
+    render: function (snapshot) {
+        domRenderer.render(snapshot);
+        gameHud.render(snapshot);
+    },
+    resize: function (viewport) {
+        domRenderer.resize(viewport);
+        gameHud.resize(viewport);
+    },
+    destroy: function () {
+        domRenderer.destroy();
+        gameHud.destroy();
+    },
 };
 
 const handleGameEvent = function (event) {
@@ -94,14 +60,14 @@ const handleGameEvent = function (event) {
 const gameRuntime = new GameRuntime({
     config: {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0},
     inputBuffer: inputBuffer,
-    renderer: temporaryDomRenderer,
+    renderer: browserRenderer,
     eventCallback: handleGameEvent,
 });
 
 mainGame.initMainGameView();
 
 // 綁定每個狀態之下的 click event
-// 將初始化取得的 main 實例的參照, 保存在 mainGame 變數中,
+// 將初始化取得的 main 實例的參照, 保存在 mainGame 常數中,
 // 以防 onclick event 發生時 this 指向被修改成 button dom
 // 將每個 button 點擊後對應要做的事, 委託出去給 GameRuntime 的 lifecycle handler
 mainGame.startButton.onclick = function () {
