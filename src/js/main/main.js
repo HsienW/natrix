@@ -70,6 +70,16 @@ const renderFromSnapshot = function (snapshot) {
     }
 };
 
+// 將此臨時 DOM 映射到 DOMRenderer。
+const temporaryDomRenderer = {
+    init: function () {},
+    render: function (snapshot) {
+        renderFromSnapshot(snapshot);
+    },
+    resize: function () {},
+    destroy: function () {},
+};
+
 const handleGameEvent = function (event) {
     if (event.type !== 'MATCH_FINISHED') {
         return;
@@ -84,7 +94,7 @@ const handleGameEvent = function (event) {
 const gameRuntime = new GameRuntime({
     config: {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0},
     inputBuffer: inputBuffer,
-    renderCallback: renderFromSnapshot,
+    renderer: temporaryDomRenderer,
     eventCallback: handleGameEvent,
 });
 

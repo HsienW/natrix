@@ -10,7 +10,6 @@ const createRuntime = function () {
     const runtime = new GameRuntime({
         config: defaultConfig,
         inputBuffer: new InputBuffer(),
-        renderCallback: () => {},
         stepMs: 100,
         maxFrameDeltaMs: 250,
         requestFrame: (cb) => {
