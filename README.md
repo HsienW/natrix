@@ -61,7 +61,7 @@ Simulation
 Snapshot projection
     -> Renderer
 Renderer / HUD
-    -> DOM only
+    -> DOM or Canvas
 ```
 
 - `stepGame(state, commands, environment)` is a pure function with no DOM, rAF, or timer dependency.
@@ -104,7 +104,9 @@ IDLE --START--> RUNNING --PAUSE--> PAUSED --RESUME--> RUNNING
 - `GameRuntime` renders snapshots through the `init / render / resize / destroy` contract.
 - `RendererHost` owns renderer initialization, replacement, resize, and cleanup order.
 - `NullRenderer` keeps headless simulation and replay independent from browser rendering.
-- The current DOM projection remains a temporary bootstrap adapter until PR-12.
+- `DOMRenderer` remains the default reference renderer.
+- `CanvasRenderer` draws the same world snapshot with DPR-aware backing-store dimensions.
+- Add `?renderer=canvas` to the URL to use Canvas. Missing or invalid values fall back to DOM.
 
 ## Game rule
 ![image](https://user-images.githubusercontent.com/20525933/132933824-1c4b95b5-2d8f-46ab-9996-38121f5935c2.png)

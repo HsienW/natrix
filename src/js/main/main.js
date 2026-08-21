@@ -5,7 +5,7 @@ import {keyboardInput} from '../input/keyboard-input.js';
 import {inputBuffer} from '../input/input-buffer.js';
 import {GameRuntime} from '../runtime/game-runtime.js';
 import {RUNTIME_ACTIONS, RUNTIME_STATES} from '../runtime/runtime-state.js';
-import {DOMRenderer} from '../render/dom-renderer.js';
+import {createWorldRenderer} from '../render/renderer-factory.js';
 import {GameHud} from '../render/game-hud.js';
 import {noticeConfirm} from '../common/notice.js';
 import '../../style/reset.css';
@@ -24,24 +24,27 @@ Main.prototype.initMainGameView = function () {
 }
 
 const mainGame = new Main();
-const domRenderer = new DOMRenderer('game-map');
+const rendererSelection = createWorldRenderer({
+    search: window.location.search,
+});
+const worldRenderer = rendererSelection.renderer;
 const gameHud = new GameHud();
 
 const browserRenderer = {
     init: function (config) {
-        domRenderer.init(config);
+        worldRenderer.init(config);
         gameHud.init(config);
     },
     render: function (snapshot) {
-        domRenderer.render(snapshot);
+        worldRenderer.render(snapshot);
         gameHud.render(snapshot);
     },
     resize: function (viewport) {
-        domRenderer.resize(viewport);
+        worldRenderer.resize(viewport);
         gameHud.resize(viewport);
     },
     destroy: function () {
-        domRenderer.destroy();
+        worldRenderer.destroy();
         gameHud.destroy();
     },
 };

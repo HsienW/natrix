@@ -9,13 +9,26 @@ body {
     font-family: "Microsoft JhengHei";
 }
 
-#game-map {
+#game-map,
+#game-canvas {
     background-color: #c7c7c7;
     width: 80vmin;
     height: 80vmin;
+}
+
+#game-map {
     display: grid;
     grid-template-rows: repeat(41, 1fr);
     grid-template-columns: repeat(41, 1fr);
+}
+
+#game-canvas {
+    display: block;
+}
+
+#game-map[hidden],
+#game-canvas[hidden] {
+    display: none;
 }
 
 .game-countdown {
