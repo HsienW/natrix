@@ -99,6 +99,13 @@ IDLE --START--> RUNNING --PAUSE--> PAUSED --RESUME--> RUNNING
 - Versioned replay payloads run synchronously without browser or renderer APIs.
 - Canonical state fingerprints verify live runtime and replay parity.
 
+### Renderer boundary
+
+- `GameRuntime` renders snapshots through the `init / render / resize / destroy` contract.
+- `RendererHost` owns renderer initialization, replacement, resize, and cleanup order.
+- `NullRenderer` keeps headless simulation and replay independent from browser rendering.
+- The current DOM projection remains a temporary bootstrap adapter until PR-12.
+
 ## Game rule
 ![image](https://user-images.githubusercontent.com/20525933/132933824-1c4b95b5-2d8f-46ab-9996-38121f5935c2.png)
 
