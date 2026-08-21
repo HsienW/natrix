@@ -3,9 +3,18 @@ const {InputBuffer} = require('../../src/js/input/input-buffer.js');
 
 const defaultConfig = {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0};
 
+const createRenderer = function () {
+    return {
+        init: jest.fn(),
+        render: jest.fn(),
+        resize: jest.fn(),
+        destroy: jest.fn(),
+    };
+};
+
 const createRuntime = function (overrides = {}) {
     const buffer = overrides.inputBuffer || new InputBuffer();
-    const renderCallback = overrides.renderCallback || jest.fn();
+    const renderer = overrides.renderer || createRenderer();
     const eventCallback = overrides.eventCallback || jest.fn();
     const frames = [];
     let nextId = 1;
@@ -25,7 +34,7 @@ const createRuntime = function (overrides = {}) {
     const runtime = new GameRuntime({
         config: overrides.config || defaultConfig,
         inputBuffer: buffer,
-        renderCallback,
+        renderer,
         eventCallback,
         stepMs: overrides.stepMs || 100,
         maxFrameDeltaMs: overrides.maxFrameDeltaMs || 250,
@@ -36,7 +45,7 @@ const createRuntime = function (overrides = {}) {
     return {
         runtime,
         buffer,
-        renderCallback,
+        renderer,
         eventCallback,
         frames,
         requestFrame,
@@ -59,13 +68,31 @@ const runNextFrame = function (frames, timestamp) {
 
 describe('GameRuntime', () => {
     test('creates with initial snapshot at tick 0', () => {
-        const {runtime} = createRuntime();
+        const {runtime, renderer} = createRuntime();
         const snapshot = runtime.getSnapshot();
 
         expect(snapshot.tick).toBe(0);
         expect(snapshot.mapSize).toBe(41);
         expect(snapshot.snakes).toHaveLength(2);
         expect(snapshot.finished).toBe(false);
+        expect(renderer.init).toHaveBeenCalledTimes(1);
+        expect(renderer.init).toHaveBeenCalledWith(defaultConfig);
+    });
+
+    test('initializes renderer with normalized simulation config', () => {
+        const renderer = createRenderer();
+
+        createRuntime({
+            config: {seed: 7},
+            renderer: renderer,
+        });
+
+        expect(renderer.init).toHaveBeenCalledWith({
+            mapSize: 41,
+            tickRate: 10,
+            durationTicks: 600,
+            seed: 7,
+        });
     });
 
     test('start schedules one rAF frame', () => {
@@ -224,15 +251,45 @@ describe('GameRuntime', () => {
         expect(runtime.getCommandLog()).toEqual([]);
     });
 
-    test('handleRender calls render callback with snapshot and alpha', () => {
-        const {runtime, renderCallback} = createRuntime();
+    test('handleRender passes snapshot and frame metadata to the renderer', () => {
+        const {runtime, renderer} = createRuntime();
 
-        runtime.handleRender(0.5);
+        runtime.handleRender(0.5, 1200);
 
-        expect(renderCallback).toHaveBeenCalledWith(expect.any(Object), 0.5);
-        const snapshot = renderCallback.mock.calls[0][0];
+        expect(renderer.render).toHaveBeenCalledWith(expect.any(Object), {
+            alpha: 0.5,
+            frameTimestamp: 1200,
+        });
+        const snapshot = renderer.render.mock.calls[0][0];
         expect(snapshot.tick).toBe(0);
         expect(snapshot.mapSize).toBe(41);
+    });
+
+    test('swaps renderer through the runtime host', () => {
+        const {runtime, renderer} = createRuntime();
+        const nextRenderer = createRenderer();
+
+        runtime.setRenderer(nextRenderer);
+        runtime.handleRender(0.25, 100);
+
+        expect(renderer.destroy).toHaveBeenCalledTimes(1);
+        expect(nextRenderer.init).toHaveBeenCalledWith(defaultConfig);
+        expect(nextRenderer.render).toHaveBeenCalledWith(expect.any(Object), {
+            alpha: 0.25,
+            frameTimestamp: 100,
+        });
+    });
+
+    test('forwards resize and destroys renderer resources once', () => {
+        const {runtime, renderer} = createRuntime();
+        const viewport = {width: 640, height: 640};
+
+        runtime.resizeRenderer(viewport);
+        runtime.destroy();
+        runtime.destroy();
+
+        expect(renderer.resize).toHaveBeenCalledWith(viewport);
+        expect(renderer.destroy).toHaveBeenCalledTimes(1);
     });
 
     test('drains input commands once per simulation step, not per render frame', () => {
@@ -248,26 +305,27 @@ describe('GameRuntime', () => {
         expect(aSnake.direction).toEqual({x: 1, y: 0});
     });
 
-    test('render callback receives snapshot and alpha after simulation step', () => {
-        const {runtime, renderCallback, frames} = createRuntime();
+    test('renderer receives snapshot and metadata after simulation step', () => {
+        const {runtime, renderer, frames} = createRuntime();
 
         startAndInit(runtime, frames);
         runNextFrame(frames, 150);
 
-        expect(renderCallback).toHaveBeenCalled();
-        const lastCall = renderCallback.mock.calls[renderCallback.mock.calls.length - 1];
+        expect(renderer.render).toHaveBeenCalled();
+        const lastCall = renderer.render.mock.calls[renderer.render.mock.calls.length - 1];
         const snapshot = lastCall[0];
-        const alpha = lastCall[1];
+        const meta = lastCall[1];
 
         expect(snapshot).toBeDefined();
         expect(snapshot.tick).toBe(1);
-        expect(typeof alpha).toBe('number');
-        expect(alpha).toBeGreaterThanOrEqual(0);
-        expect(alpha).toBeLessThan(1);
+        expect(typeof meta.alpha).toBe('number');
+        expect(meta.alpha).toBeGreaterThanOrEqual(0);
+        expect(meta.alpha).toBeLessThan(1);
+        expect(meta.frameTimestamp).toBe(150);
     });
 
     test('multiple fixed steps may run before one render', () => {
-        const {runtime, renderCallback} = createRuntime({stepMs: 100});
+        const {runtime, renderer} = createRuntime({stepMs: 100});
 
         runtime.handleUpdate();
         runtime.handleUpdate();
@@ -275,19 +333,19 @@ describe('GameRuntime', () => {
 
         const state = runtime.getState();
         expect(state.tick).toBe(2);
-        expect(renderCallback).toHaveBeenCalledTimes(1);
+        expect(renderer.render).toHaveBeenCalledTimes(1);
     });
 
     test('render may run with zero simulation steps', () => {
-        const {runtime, frames, renderCallback} = createRuntime();
+        const {runtime, frames, renderer} = createRuntime();
 
         startAndInit(runtime, frames);
-        renderCallback.mockClear();
+        renderer.render.mockClear();
         runNextFrame(frames, 50);
 
         const state = runtime.getState();
         expect(state.tick).toBe(0);
-        expect(renderCallback).toHaveBeenCalledTimes(1);
+        expect(renderer.render).toHaveBeenCalledTimes(1);
     });
 
     test('event log collects domain events from simulation steps', () => {

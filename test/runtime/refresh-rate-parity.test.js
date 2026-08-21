@@ -11,7 +11,6 @@ const runSequence = function (frameDeltas) {
     const runtime = new GameRuntime({
         config,
         inputBuffer: buffer,
-        renderCallback: () => {},
         stepMs: 100,
         maxFrameDeltaMs: 250,
         requestFrame: (cb) => {

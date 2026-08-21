@@ -98,7 +98,7 @@ class FixedTimestepLoop {
             this.update(this.stepMs);
         }
 
-        this.render(this.accumulatorMs / this.stepMs);
+        this.render(this.accumulatorMs / this.stepMs, currentTimestamp);
 
         if (this.running) {
             this.scheduleNextFrame();

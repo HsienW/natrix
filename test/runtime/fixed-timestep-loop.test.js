@@ -43,8 +43,8 @@ describe('FixedTimestepLoop', () => {
 
         expect(update).toHaveBeenCalledTimes(2);
         expect(update).toHaveBeenNthCalledWith(1, 100);
-        expect(render).toHaveBeenNthCalledWith(1, 0);
-        expect(render).toHaveBeenNthCalledWith(2, 0.5);
+        expect(render).toHaveBeenNthCalledWith(1, 0, 1000);
+        expect(render).toHaveBeenNthCalledWith(2, 0.5, 1250);
     });
 
     test('does not accumulate paused time and keeps the partial step on resume', () => {
@@ -109,7 +109,7 @@ describe('FixedTimestepLoop', () => {
         scheduler.runNextFrame(250);
 
         expect(update).toHaveBeenCalledTimes(1);
-        expect(render).toHaveBeenLastCalledWith(0);
+        expect(render).toHaveBeenLastCalledWith(0, 250);
         expect(loop.isRunning()).toBe(false);
         expect(scheduler.requestFrame).toHaveBeenCalledTimes(2);
     });

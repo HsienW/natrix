@@ -4,8 +4,10 @@ import {RuntimeStateMachine} from './runtime-state-machine.js';
 import {RUNTIME_STATES, RUNTIME_ACTIONS} from './runtime-state.js';
 import {CommandRecorder} from '../replay/command-recorder.js';
 import {createReplayPayload} from '../replay/replay-schema.js';
+import {RendererHost} from '../render/renderer-host.js';
+import {NullRenderer} from '../render/null-renderer.js';
+import {createRenderSnapshot} from '../render/render-model.js';
 
-const DEFAULT_RENDER = function () {};
 const DEFAULT_EVENT_HANDLER = function () {};
 
 class GameRuntime {
@@ -13,7 +15,7 @@ class GameRuntime {
         config,
         inputBuffer,
         commandRecorder = new CommandRecorder(),
-        renderCallback = DEFAULT_RENDER,
+        renderer = new NullRenderer(),
         eventCallback = DEFAULT_EVENT_HANDLER,
         stepMs,
         maxFrameDeltaMs,
@@ -32,9 +34,6 @@ class GameRuntime {
             || typeof commandRecorder.clear !== 'function') {
             throw new TypeError('GameRuntime requires a command recorder.');
         }
-        if (typeof renderCallback !== 'function') {
-            throw new TypeError('GameRuntime render callback must be a function.');
-        }
         if (typeof eventCallback !== 'function') {
             throw new TypeError('GameRuntime event callback must be a function.');
         }
@@ -42,20 +41,22 @@ class GameRuntime {
         this.config = config;
         this.inputBuffer = inputBuffer;
         this.commandRecorder = commandRecorder;
-        this.renderCallback = renderCallback;
         this.eventCallback = eventCallback;
         this.eventLog = [];
         this.currentAlpha = 0;
         this.lifecycleListeners = [];
 
         this.simulation = createSimulation(config);
-        this.currentSnapshot = this.simulation.snapshot();
+        this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
+
+        this.rendererHost = new RendererHost(renderer);
+        this.rendererHost.init(this.simulation.getState().config);
 
         this.machine = new RuntimeStateMachine();
 
         const loopOptions = {
             update: (stepMsValue) => this.handleUpdate(stepMsValue),
-            render: (alpha) => this.handleRender(alpha),
+            render: (alpha, frameTimestamp) => this.handleRender(alpha, frameTimestamp),
         };
         if (stepMs !== undefined) {
             loopOptions.stepMs = stepMs;
@@ -152,7 +153,7 @@ class GameRuntime {
         this.simulation.reset(this.config);
         this.eventLog = [];
         this.currentAlpha = 0;
-        this.currentSnapshot = this.simulation.snapshot();
+        this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
     }
 
     isRunning() {
@@ -185,6 +186,19 @@ class GameRuntime {
         });
     }
 
+    setRenderer(renderer) {
+        this.rendererHost.setRenderer(renderer);
+    }
+
+    resizeRenderer(viewport) {
+        this.rendererHost.resize(viewport);
+    }
+
+    destroy() {
+        this.loop.stop();
+        this.rendererHost.destroy();
+    }
+
     handleUpdate() {
         const commands = this.inputBuffer.drain();
         const tick = this.simulation.getState().tick;
@@ -202,10 +216,13 @@ class GameRuntime {
         }
     }
 
-    handleRender(alpha) {
+    handleRender(alpha, frameTimestamp = null) {
         this.currentAlpha = alpha;
-        this.currentSnapshot = this.simulation.snapshot();
-        this.renderCallback(this.currentSnapshot, alpha);
+        this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
+        this.rendererHost.render(this.currentSnapshot, {
+            alpha: alpha,
+            frameTimestamp: frameTimestamp,
+        });
     }
 }
 
