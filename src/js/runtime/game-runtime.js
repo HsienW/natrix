@@ -3,6 +3,7 @@ import {createSimulation} from '../simulation/simulation.js';
 import {RuntimeStateMachine} from './runtime-state-machine.js';
 import {RUNTIME_STATES, RUNTIME_ACTIONS} from './runtime-state.js';
 import {CommandRecorder} from '../replay/command-recorder.js';
+import {createReplayPayload} from '../replay/replay-schema.js';
 
 const DEFAULT_RENDER = function () {};
 const DEFAULT_EVENT_HANDLER = function () {};
@@ -172,6 +173,16 @@ class GameRuntime {
 
     getCommandLog() {
         return this.commandRecorder.entries();
+    }
+
+    getReplayPayload() {
+        const config = this.simulation.getState().config;
+
+        return createReplayPayload({
+            seed: config.seed,
+            config: config,
+            commands: this.commandRecorder.entries(),
+        });
     }
 
     handleUpdate() {
