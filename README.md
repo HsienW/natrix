@@ -44,7 +44,7 @@ You can switch the renderer at runtime from the control below the game. The Canv
 
 - Local two-player Snake match with red and blue teams.
 - Blue snake uses ⬆️, ⬅️, ⬇️, ➡️.
-- Red snake uses `W`, `A`, `S`, and `D`.
+- Red snake uses `W`, `A`, `S`, `D`.
 - Yellow food adds 1 point.
 - Green food adds 2 points.
 - A snake dies when it collides with the wall or with its own body.
