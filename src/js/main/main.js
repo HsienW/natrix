@@ -6,6 +6,8 @@ import {inputBuffer} from '../input/input-buffer.js';
 import {GameRuntime} from '../runtime/game-runtime.js';
 import {RUNTIME_ACTIONS, RUNTIME_STATES} from '../runtime/runtime-state.js';
 import {createWorldRenderer} from '../render/renderer-factory.js';
+import {updateRendererModeInUrl} from '../render/renderer-mode.js';
+import {RendererHost} from '../render/renderer-host.js';
 import {GameHud} from '../render/game-hud.js';
 import {noticeConfirm} from '../common/notice.js';
 import '../../style/reset.css';
@@ -17,34 +19,36 @@ const Main = function () {
     this.startButton = null;
     this.pauseButton = null;
     this.finishButton = null;
+    this.rendererModeSelect = null;
 }
 
 Main.prototype.initMainGameView = function () {
     mainView.callAction('initControlButtonsDom');
+    mainView.callAction('initRendererModeDom');
 }
 
 const mainGame = new Main();
 const rendererSelection = createWorldRenderer({
     search: window.location.search,
 });
-const worldRenderer = rendererSelection.renderer;
+const worldRendererHost = new RendererHost(rendererSelection.renderer);
 const gameHud = new GameHud();
 
 const browserRenderer = {
     init: function (config) {
-        worldRenderer.init(config);
+        worldRendererHost.init(config);
         gameHud.init(config);
     },
-    render: function (snapshot) {
-        worldRenderer.render(snapshot);
+    render: function (snapshot, meta) {
+        worldRendererHost.render(snapshot, meta);
         gameHud.render(snapshot);
     },
     resize: function (viewport) {
-        worldRenderer.resize(viewport);
+        worldRendererHost.resize(viewport);
         gameHud.resize(viewport);
     },
     destroy: function () {
-        worldRenderer.destroy();
+        worldRendererHost.destroy();
         gameHud.destroy();
     },
 };
@@ -68,6 +72,30 @@ const gameRuntime = new GameRuntime({
 });
 
 mainGame.initMainGameView();
+mainGame.rendererModeSelect.value = rendererSelection.mode;
+
+let currentRendererMode = rendererSelection.mode;
+
+const changeRendererMode = function (requestedMode) {
+    const nextSelection = createWorldRenderer({
+        mode: requestedMode,
+    });
+
+    if (nextSelection.mode === currentRendererMode) {
+        mainGame.rendererModeSelect.value = currentRendererMode;
+        return;
+    }
+
+    worldRendererHost.setRenderer(nextSelection.renderer);
+    worldRendererHost.render(gameRuntime.getSnapshot(), {
+        alpha: 0,
+        frameTimestamp: null,
+    });
+
+    currentRendererMode = nextSelection.mode;
+    mainGame.rendererModeSelect.value = currentRendererMode;
+    updateRendererModeInUrl(window, currentRendererMode);
+};
 
 // 綁定每個狀態之下的 click event
 // 將初始化取得的 main 實例的參照, 保存在 mainGame 常數中,
@@ -88,6 +116,10 @@ mainGame.pauseButton.onclick = function () {
 
 mainGame.finishButton.onclick = function () {
     gameRuntime.dispatch(RUNTIME_ACTIONS.FINISH);
+};
+
+mainGame.rendererModeSelect.onchange = function () {
+    changeRendererMode(this.value);
 };
 
 keyboardInput.start();

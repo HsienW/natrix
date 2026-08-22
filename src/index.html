@@ -19,7 +19,13 @@
     </div>
 
     <div class="game-control-area area-margin-top">
-        <div class="team"></div>
+        <div class="team renderer-mode-control">
+            <label for="renderer-mode">Renderer</label>
+            <select id="renderer-mode" class="renderer-mode-select">
+                <option value="dom">DOM</option>
+                <option value="canvas">Canvas</option>
+            </select>
+        </div>
         <div class="control-button">
             <div class="button start-button">Start</div>
             <div class="button pause-button">Pause</div>
