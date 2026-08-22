@@ -1,7 +1,7 @@
 /**
  * @typedef {Object} Renderer
  * @property {function(Object): void} init
- * @property {function(Object, Object): void} render
+ * @property {function(Object, Object): void} render Receives the authoritative snapshot and optional frame metadata.
  * @property {function(Object): void} resize
  * @property {function(): void} destroy
  */

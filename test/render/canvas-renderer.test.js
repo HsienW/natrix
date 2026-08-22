@@ -129,6 +129,31 @@ describe('CanvasRenderer', () => {
         expect(snapshot).toEqual(originalSnapshot);
     });
 
+    test('draws the interpolated snapshot when render metadata provides one', () => {
+        const context = createContext();
+        prepareCanvas(context);
+        const renderer = createRenderer(1);
+        const snapshot = createSnapshot();
+        const interpolatedSnapshot = {
+            ...snapshot,
+            snakes: [
+                {
+                    ...snapshot.snakes[0],
+                    body: [{x: 1.5, y: 3}],
+                },
+            ],
+        };
+
+        renderer.init({mapSize: 4});
+        renderer.render(snapshot, {
+            alpha: 0.5,
+            interpolatedSnapshot: interpolatedSnapshot,
+        });
+
+        expect(context.fillRect).toHaveBeenNthCalledWith(2, 10, 40, 20, 20);
+        expect(snapshot.snakes[0].body[0]).toEqual({x: 2, y: 3});
+    });
+
     test('resizes from an explicit square viewport and resets the transform', () => {
         const context = createContext();
         const canvas = prepareCanvas(context);
