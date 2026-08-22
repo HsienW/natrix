@@ -131,7 +131,11 @@ CanvasRenderer.prototype.drawSnakeSegment = function (bodyItem, styleName) {
     this.context.strokeRect(rectangle.x, rectangle.y, rectangle.width, rectangle.height);
 };
 
-CanvasRenderer.prototype.render = function (snapshot) {
+CanvasRenderer.prototype.getSnapshotForFrame = function (snapshot, meta = {}) {
+    return meta.interpolatedSnapshot || snapshot;
+};
+
+CanvasRenderer.prototype.render = function (snapshot, meta = {}) {
     if (!this.canvas || !this.context) {
         throw new Error('CanvasRenderer must be initialized before rendering.');
     }
@@ -144,13 +148,15 @@ CanvasRenderer.prototype.render = function (snapshot) {
         return;
     }
 
+    const renderSnapshot = this.getSnapshotForFrame(snapshot, meta);
+
     this.drawBackground();
 
-    snapshot.food.forEach((foodItem) => {
+    renderSnapshot.food.forEach((foodItem) => {
         this.drawFood(foodItem);
     });
 
-    snapshot.snakes.forEach((snake) => {
+    renderSnapshot.snakes.forEach((snake) => {
         if (!snake.alive) {
             return;
         }

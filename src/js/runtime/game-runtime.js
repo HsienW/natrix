@@ -6,7 +6,10 @@ import {CommandRecorder} from '../replay/command-recorder.js';
 import {createReplayPayload} from '../replay/replay-schema.js';
 import {RendererHost} from '../render/renderer-host.js';
 import {NullRenderer} from '../render/null-renderer.js';
-import {createRenderSnapshot} from '../render/render-model.js';
+import {
+    createInterpolatedRenderSnapshot,
+    createRenderSnapshot,
+} from '../render/render-model.js';
 
 const DEFAULT_EVENT_HANDLER = function () {};
 
@@ -48,6 +51,7 @@ class GameRuntime {
 
         this.simulation = createSimulation(config);
         this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
+        this.previousSnapshot = this.currentSnapshot;
 
         this.rendererHost = new RendererHost(renderer);
         this.rendererHost.init(this.simulation.getState().config);
@@ -154,6 +158,7 @@ class GameRuntime {
         this.eventLog = [];
         this.currentAlpha = 0;
         this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
+        this.previousSnapshot = this.currentSnapshot;
     }
 
     isRunning() {
@@ -203,7 +208,10 @@ class GameRuntime {
         const commands = this.inputBuffer.drain();
         const tick = this.simulation.getState().tick;
         this.commandRecorder.record(tick, commands);
+
+        this.previousSnapshot = this.currentSnapshot;
         const result = this.simulation.step(commands);
+        this.currentSnapshot = createRenderSnapshot(result.state);
         this.eventLog.push(...result.events);
 
         if (result.state.finished
@@ -218,10 +226,18 @@ class GameRuntime {
 
     handleRender(alpha, frameTimestamp = null) {
         this.currentAlpha = alpha;
-        this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
+        const interpolatedSnapshot = createInterpolatedRenderSnapshot(
+            this.previousSnapshot,
+            this.currentSnapshot,
+            alpha,
+        );
+
         this.rendererHost.render(this.currentSnapshot, {
             alpha: alpha,
             frameTimestamp: frameTimestamp,
+            previousSnapshot: this.previousSnapshot,
+            currentSnapshot: this.currentSnapshot,
+            interpolatedSnapshot: interpolatedSnapshot,
         });
     }
 }

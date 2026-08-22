@@ -256,13 +256,29 @@ describe('GameRuntime', () => {
 
         runtime.handleRender(0.5, 1200);
 
-        expect(renderer.render).toHaveBeenCalledWith(expect.any(Object), {
+        expect(renderer.render).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
             alpha: 0.5,
             frameTimestamp: 1200,
-        });
+        }));
         const snapshot = renderer.render.mock.calls[0][0];
         expect(snapshot.tick).toBe(0);
         expect(snapshot.mapSize).toBe(41);
+    });
+
+    test('render metadata carries the double-buffer snapshots and interpolated frame', () => {
+        const {runtime, renderer} = createRuntime();
+
+        runtime.handleUpdate();
+        runtime.handleRender(0.5, 1200);
+
+        const meta = renderer.render.mock.calls[0][1];
+
+        expect(meta.previousSnapshot.tick).toBe(0);
+        expect(meta.currentSnapshot.tick).toBe(1);
+        expect(meta.interpolatedSnapshot.tick).toBe(1);
+        expect(meta.interpolatedSnapshot).not.toBe(meta.currentSnapshot);
+        expect(meta.interpolatedSnapshot.snakes[0].body[0])
+            .not.toBe(meta.currentSnapshot.snakes[0].body[0]);
     });
 
     test('swaps renderer through the runtime host', () => {
@@ -274,10 +290,10 @@ describe('GameRuntime', () => {
 
         expect(renderer.destroy).toHaveBeenCalledTimes(1);
         expect(nextRenderer.init).toHaveBeenCalledWith(defaultConfig);
-        expect(nextRenderer.render).toHaveBeenCalledWith(expect.any(Object), {
+        expect(nextRenderer.render).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
             alpha: 0.25,
             frameTimestamp: 100,
-        });
+        }));
     });
 
     test('forwards resize and destroys renderer resources once', () => {
