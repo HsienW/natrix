@@ -34,6 +34,19 @@ describe('renderer factory', () => {
         expect(document.getElementById('game-canvas').hidden).toBe(false);
     });
 
+    test('selects a renderer from an explicit mode', () => {
+        const selection = createWorldRenderer({
+            document: document,
+            mode: 'canvas',
+            search: '?renderer=dom',
+        });
+
+        expect(selection.mode).toBe('canvas');
+        expect(selection.renderer).toBeInstanceOf(CanvasRenderer);
+        expect(document.getElementById('game-map').hidden).toBe(true);
+        expect(document.getElementById('game-canvas').hidden).toBe(false);
+    });
+
     test('falls back to DOM and reports an invalid renderer mode', () => {
         const reportDiagnostic = jest.fn();
 

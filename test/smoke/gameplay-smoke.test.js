@@ -10,7 +10,13 @@ const gameMarkup = `
             <canvas id="game-canvas" hidden></canvas>
         </div>
         <div class="game-control-area area-margin-top">
-            <div class="team"></div>
+            <div class="team renderer-mode-control">
+                <label for="renderer-mode">Renderer</label>
+                <select id="renderer-mode" class="renderer-mode-select">
+                    <option value="dom">DOM</option>
+                    <option value="canvas">Canvas</option>
+                </select>
+            </div>
             <div class="control-button">
                 <div class="button start-button">Start</div>
                 <div class="button pause-button">Pause</div>
@@ -175,6 +181,7 @@ describe('gameplay smoke', () => {
         expect(document.getElementById('game-map').hidden).toBe(true);
         expect(canvas.hidden).toBe(false);
         expect(canvas.width).toBe(410);
+        expect(document.querySelector('.renderer-mode-select').value).toBe('canvas');
         expect(gameRuntime.getLifecycleState()).toBe('IDLE');
 
         document.querySelector('.start-button').click();
@@ -183,6 +190,25 @@ describe('gameplay smoke', () => {
 
         expect(context.fillRect).toHaveBeenCalled();
         expect(context.arc).toHaveBeenCalled();
+
+        const tickBeforeRendererChange = gameRuntime.getState().tick;
+        const rendererModeSelect = document.querySelector('.renderer-mode-select');
+
+        rendererModeSelect.value = 'dom';
+        rendererModeSelect.dispatchEvent(new Event('change'));
+
+        expect(document.getElementById('game-map').hidden).toBe(false);
+        expect(canvas.hidden).toBe(true);
+        expect(window.location.search).toBe('');
+        expect(gameRuntime.getState().tick).toBe(tickBeforeRendererChange);
+
+        rendererModeSelect.value = 'canvas';
+        rendererModeSelect.dispatchEvent(new Event('change'));
+
+        expect(document.getElementById('game-map').hidden).toBe(true);
+        expect(canvas.hidden).toBe(false);
+        expect(window.location.search).toBe('?renderer=canvas');
+        expect(gameRuntime.getState().tick).toBe(tickBeforeRendererChange);
 
         gameRuntime.destroy();
     });

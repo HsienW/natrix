@@ -14,6 +14,10 @@ const mainView = (function () {
         mainGame.finishButton = controlButtonsDom.querySelector('.finish-button');
     }
 
+    operations.initRendererModeDom = function () {
+        mainGame.rendererModeSelect = document.querySelector('.renderer-mode-select');
+    }
+
     // 處理呼叫參數的介面
     const callAction = function () {
         const action = Array.prototype.shift.call(arguments);

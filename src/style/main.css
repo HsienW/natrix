@@ -67,6 +67,24 @@ body {
     align-items: center;
 }
 
+.renderer-mode-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-left: 8px;
+    color: #2c2c2c;
+    font-size: 0.875rem;
+}
+
+.renderer-mode-select {
+    max-width: 90px;
+    padding: 4px;
+    border: 1px solid #7a7a7a;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #2c2c2c;
+}
+
 .button {
     border-radius: 4px;
     padding: 6px 8px;
