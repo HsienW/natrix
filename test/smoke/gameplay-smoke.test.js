@@ -5,8 +5,10 @@ const gameMarkup = `
             <div class="game-countdown"></div>
             <div class="team-scoreboard b-team"></div>
         </div>
-        <div id="game-map"></div>
-        <canvas id="game-canvas" hidden></canvas>
+        <div id="game-world">
+            <div id="game-map"></div>
+            <canvas id="game-canvas" hidden></canvas>
+        </div>
         <div class="game-control-area area-margin-top">
             <div class="team"></div>
             <div class="control-button">
@@ -142,9 +144,11 @@ describe('gameplay smoke', () => {
 
         const scheduledFrames = new Map();
         let nextFrameId = 1;
+        const gameWorld = document.getElementById('game-world');
         const canvas = document.getElementById('game-canvas');
         const context = {
             setTransform: jest.fn(),
+            scale: jest.fn(),
             fillRect: jest.fn(),
             strokeRect: jest.fn(),
             beginPath: jest.fn(),
@@ -155,7 +159,7 @@ describe('gameplay smoke', () => {
         };
 
         canvas.getContext = jest.fn(() => context);
-        canvas.getBoundingClientRect = jest.fn(() => ({width: 410, height: 410}));
+        gameWorld.getBoundingClientRect = jest.fn(() => ({width: 410, height: 410}));
         global.confirm = jest.fn(() => true);
         global.requestAnimationFrame = jest.fn((callback) => {
             const frameId = nextFrameId++;

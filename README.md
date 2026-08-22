@@ -105,7 +105,7 @@ IDLE --START--> RUNNING --PAUSE--> PAUSED --RESUME--> RUNNING
 - `RendererHost` owns renderer initialization, replacement, resize, and cleanup order.
 - `NullRenderer` keeps headless simulation and replay independent from browser rendering.
 - `DOMRenderer` remains the default reference renderer.
-- `CanvasRenderer` draws the same world snapshot with DPR-aware backing-store dimensions.
+- `CanvasRenderer` tracks container resize and DPR changes without leaking observers or fallback listeners.
 - Add `?renderer=canvas` to the URL to use Canvas. Missing or invalid values fall back to DOM.
 
 ## Game rule
