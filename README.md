@@ -106,7 +106,8 @@ IDLE --START--> RUNNING --PAUSE--> PAUSED --RESUME--> RUNNING
 - `NullRenderer` keeps headless simulation and replay independent from browser rendering.
 - `DOMRenderer` remains the default reference renderer.
 - `CanvasRenderer` tracks container resize and DPR changes without leaking observers or fallback listeners.
-- Add `?renderer=canvas` to the URL to use Canvas. Missing or invalid values fall back to DOM.
+- Use the Renderer control below the game to switch between DOM and Canvas without restarting the match.
+- The selected mode is reflected in `?renderer=canvas`; missing or invalid values fall back to DOM.
 
 ## Game rule
 ![image](https://user-images.githubusercontent.com/20525933/132933824-1c4b95b5-2d8f-46ab-9996-38121f5935c2.png)
