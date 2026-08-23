@@ -6,7 +6,7 @@
   </a>
 </p>
 
-![license](https://img.shields.io/badge/license-ISC-2f855a)
+![license](https://img.shields.io/badge/license-MIT-2f855a)
 ![language](https://img.shields.io/badge/Vanilla-JavaScript-f7df1e)
 ![runtime](https://img.shields.io/badge/runtime-fixed%20timestep-2563eb)
 ![replay](https://img.shields.io/badge/replay-deterministic-7c3aed)
@@ -143,4 +143,4 @@ npm run verify:preview
 
 ## License
 
-ISC
+MIT
