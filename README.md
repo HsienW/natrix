@@ -1,6 +1,12 @@
 # Natrix
 
-![license](https://img.shields.io/badge/license-ISC-2f855a)
+<p align="center">
+  <a href="https://natrixapp.netlify.app" target="natrixapp">
+    <img src="./asset/natrixapp.jpg" alt="natrixapp" width="768" />
+  </a>
+</p>
+
+![license](https://img.shields.io/badge/license-MIT-2f855a)
 ![language](https://img.shields.io/badge/Vanilla-JavaScript-f7df1e)
 ![runtime](https://img.shields.io/badge/runtime-fixed%20timestep-2563eb)
 ![replay](https://img.shields.io/badge/replay-deterministic-7c3aed)
@@ -23,7 +29,7 @@ No any framework. No game engine. Just browser APIs, JavaScript modules, tests, 
 
 ## Demo
 
-[Online play](https://competent-khorana-6f72c1.netlify.app)
+[Play](https://natrixapp.netlify.app)
 
 You can switch the renderer at runtime from the control below the game. The Canvas mode is also addressable through `?renderer=canvas`; missing or invalid renderer values fall back to DOM rendering.
 
@@ -137,4 +143,4 @@ This codebase uses patterns only where they describe real boundaries:
 
 ## License
 
-ISC
+MIT

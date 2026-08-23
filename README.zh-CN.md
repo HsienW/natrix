@@ -1,6 +1,12 @@
 # Natrix
 
-![license](https://img.shields.io/badge/license-ISC-2f855a)
+<p align="center">
+  <a href="https://natrixapp.netlify.app" target="natrixapp">
+    <img src="./asset/natrixapp.jpg" alt="natrixapp" width="768" />
+  </a>
+</p>
+
+![license](https://img.shields.io/badge/license-MIT-2f855a)
 ![language](https://img.shields.io/badge/Vanilla-JavaScript-f7df1e)
 ![runtime](https://img.shields.io/badge/runtime-fixed%20timestep-2563eb)
 ![replay](https://img.shields.io/badge/replay-deterministic-7c3aed)
@@ -23,7 +29,7 @@ Natrix 是一个以「双人贪吃蛇游戏」为核心所打造的无框架，�
 
 ## Demo
 
-[Online play](https://competent-khorana-6f72c1.netlify.app)
+[Play](https://natrixapp.netlify.app)
 
 你可以在游戏下方的控制项中，于执行期间切换渲染器（renderer）。Canvas 模式也可以通过网址参数 `?renderer=canvas` 直接指定；若渲染器参数缺失或无效，将会回退（fall back）为 DOM 渲染。
 
@@ -137,4 +143,4 @@ npm run verify:preview
 
 ## License
 
-ISC
+MIT
