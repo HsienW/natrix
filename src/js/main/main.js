@@ -9,6 +9,7 @@ import {createWorldRenderer} from '../render/renderer-factory.js';
 import {updateRendererModeInUrl} from '../render/renderer-mode.js';
 import {RendererHost} from '../render/renderer-host.js';
 import {GameHud} from '../render/game-hud.js';
+import {PerformancePanel} from '../telemetry/performance-panel.js';
 import {noticeConfirm} from '../common/notice.js';
 import '../../style/reset.css';
 import '../../style/main.css';
@@ -33,11 +34,13 @@ const rendererSelection = createWorldRenderer({
 });
 const worldRendererHost = new RendererHost(rendererSelection.renderer);
 const gameHud = new GameHud();
+const performancePanel = new PerformancePanel();
 
 const browserRenderer = {
     init: function (config) {
         worldRendererHost.init(config);
         gameHud.init(config);
+        performancePanel.init();
     },
     render: function (snapshot, meta) {
         worldRendererHost.render(snapshot, meta);
@@ -50,6 +53,7 @@ const browserRenderer = {
     destroy: function () {
         worldRendererHost.destroy();
         gameHud.destroy();
+        performancePanel.destroy();
     },
 };
 
@@ -64,17 +68,23 @@ const handleGameEvent = function (event) {
 
 /** State Pattern **/
 // 設定初始狀態
+let currentRendererMode = rendererSelection.mode;
+
 const gameRuntime = new GameRuntime({
     config: {mapSize: 41, tickRate: 10, durationTicks: 600, seed: 0},
     inputBuffer: inputBuffer,
     renderer: browserRenderer,
     eventCallback: handleGameEvent,
+    metricsCallback: function (metrics) {
+        performancePanel.render(metrics, {
+            runtimeMode: 'Main Thread',
+            rendererMode: currentRendererMode,
+        });
+    },
 });
 
 mainGame.initMainGameView();
 mainGame.rendererModeSelect.value = rendererSelection.mode;
-
-let currentRendererMode = rendererSelection.mode;
 
 const changeRendererMode = function (requestedMode) {
     const nextSelection = createWorldRenderer({

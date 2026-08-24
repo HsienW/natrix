@@ -1,17 +1,30 @@
 body {
-    width: 100vw;
-    height: 100vh;
+    width: 100%;
+    min-height: 100vh;
     display: flex;
     justify-content: center;
-    align-content: center;
+    align-items: center;
     margin: 0;
+    padding: 12px;
+    box-sizing: border-box;
     background: #2c2c2c;
     font-family: "Microsoft JhengHei";
 }
 
+.game-layout {
+    display: grid;
+    grid-template-columns: minmax(320px, 72vmin) 240px;
+    gap: 12px;
+    align-items: start;
+}
+
+.game-surface {
+    width: 100%;
+}
+
 #game-world {
-    width: 80vmin;
-    height: 80vmin;
+    width: 100%;
+    aspect-ratio: 1;
 }
 
 #game-map,
@@ -47,8 +60,8 @@ body {
 
 .game-control-area {
     background-color: #c7c7c7;
-    width: 80vmin;
-    height: 9.5vmin;
+    width: 100%;
+    min-height: 64px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
 }
@@ -105,4 +118,67 @@ body {
 .finish-button {
     color: #ffffff;
     background-color: #943838;
+}
+
+.performance-panel {
+    background: #f4f4f4;
+    border-left: 4px solid #389472;
+    color: #2c2c2c;
+}
+
+.performance-panel h2 {
+    margin: 0;
+    padding: 12px;
+    border-bottom: 1px solid #c7c7c7;
+    font-size: 1rem;
+}
+
+.performance-panel dl {
+    margin: 0;
+}
+
+.performance-panel dl > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 9px 12px;
+    border-bottom: 1px solid #dddddd;
+}
+
+.performance-panel dt {
+    color: #555555;
+    font-size: 0.75rem;
+}
+
+.performance-panel dd {
+    margin: 0;
+    font-family: Consolas, monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+@media (max-width: 800px) {
+    body {
+        align-items: flex-start;
+    }
+
+    .game-layout {
+        width: min(92vmin, 640px);
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .performance-panel dl {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .performance-panel dl > div {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 3px;
+    }
+
+    .performance-panel dd {
+        text-align: left;
+    }
 }
