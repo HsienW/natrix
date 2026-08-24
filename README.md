@@ -23,7 +23,7 @@
 
 Natrix is a framework-free browser runtime experiment built around a playable local two-player Snake game.
 
-Compact runtime showcase: command-driven input, fixed-timestep simulation, deterministic replay, explicit lifecycle state, and replaceable DOM/Canvas renderers.
+Compact runtime showcase: command-driven input, fixed-timestep simulation, deterministic replay, explicit lifecycle state, replaceable DOM/Canvas renderers, and live runtime metrics.
 
 No any framework. No game engine. Just browser APIs, JavaScript modules, tests, and a small game surface that makes the runtime behavior easy to inspect.
 
@@ -41,6 +41,7 @@ You can switch the renderer at runtime from the control below the game. The Canv
 - **Explicit lifecycle state**: start, pause, resume, finish, and reset are handled by a runtime state machine.
 - **Deterministic simulation and replay**: seeded RNG, tick-indexed command logs, replay payloads, and state hashes make gameplay reproducible.
 - **Renderer boundary**: `DOMRenderer`, `CanvasRenderer`, and `NullRenderer` share the same `init / render / resize / destroy` contract.
+- **Runtime telemetry**: measured simulation and renderer decorators expose rolling FPS and p50/p95 timing without changing deterministic game state.
 - **Headless testability**: core simulation and replay logic can run without DOM rendering.
 - **Regression coverage**: baseline gameplay, runtime lifecycle, replay, renderer behavior, input buffering, and deterministic fixtures are covered by Jest.
 
@@ -68,6 +69,7 @@ KeyboardEvent
     -> Simulation step
     -> Render snapshot
     -> DOMRenderer / CanvasRenderer / NullRenderer
+    -> RuntimeMetrics -> PerformancePanel
 ```
 
 The runtime separates intent, state, and presentation:
@@ -88,6 +90,7 @@ The runtime separates intent, state, and presentation:
 | `src/js/state/` | Serializable game state, snapshots, canonical state, and state hashing |
 | `src/js/replay/` | Command recording, replay codec, replay runner, and payload validation |
 | `src/js/render/` | Renderer contract, DOM renderer, Canvas renderer, HUD, renderer host, and mode selection |
+| `src/js/telemetry/` | Runtime timing collection, measured simulation decorator, clock adapter, and metrics panel |
 | `test/` | Unit, integration, renderer, replay, and regression coverage |
 | `docs/baseline/` | Historical gameplay and performance baseline notes |
 
@@ -139,7 +142,14 @@ This codebase uses patterns only where they describe real boundaries:
 - **Facade** for the public `GameRuntime` API.
 - **Strategy** for renderer selection.
 - **Adapter** around browser-specific input and rendering concerns.
+- **Decorator** for simulation and renderer timing without adding measurement code to their core implementations.
 - **Memento-style replay payloads** for reproducible simulation.
+
+## Runtime Metrics
+
+`GameRuntime.getMetrics()` returns a defensive metrics snapshot. The live panel reports FPS, frame time p50/p95, simulation step p50/p95, render time p50/p95, delayed frames, and currently rendered entities.
+
+Timing percentiles and FPS use the latest 300 samples. A frame taking more than 50 ms is counted as delayed. These values are local observations, not published benchmark claims.
 
 ## License
 
