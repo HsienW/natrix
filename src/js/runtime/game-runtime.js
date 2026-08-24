@@ -10,8 +10,13 @@ import {
     createInterpolatedRenderSnapshot,
     createRenderSnapshot,
 } from '../render/render-model.js';
+import {MetricsRendererDecorator} from '../render/metrics-renderer-decorator.js';
+import {getCurrentTime} from '../telemetry/clock.js';
+import {MeasuredSimulation} from '../telemetry/measured-simulation.js';
+import {RuntimeMetrics} from '../telemetry/runtime-metrics.js';
 
 const DEFAULT_EVENT_HANDLER = function () {};
+const DEFAULT_METRICS_HANDLER = function () {};
 
 class GameRuntime {
     constructor({
@@ -24,6 +29,9 @@ class GameRuntime {
         maxFrameDeltaMs,
         requestFrame,
         cancelFrame,
+        metrics = new RuntimeMetrics(),
+        metricsCallback = DEFAULT_METRICS_HANDLER,
+        now = getCurrentTime,
     }) {
         if (!config) {
             throw new TypeError('GameRuntime requires a config.');
@@ -40,20 +48,35 @@ class GameRuntime {
         if (typeof eventCallback !== 'function') {
             throw new TypeError('GameRuntime event callback must be a function.');
         }
+        if (!metrics
+            || typeof metrics.getSnapshot !== 'function'
+            || typeof metrics.recordFrame !== 'function'
+            || typeof metrics.reset !== 'function') {
+            throw new TypeError('GameRuntime requires runtime metrics.');
+        }
+        if (typeof metricsCallback !== 'function') {
+            throw new TypeError('GameRuntime metrics callback must be a function.');
+        }
+        if (typeof now !== 'function') {
+            throw new TypeError('GameRuntime now must be a function.');
+        }
 
         this.config = config;
         this.inputBuffer = inputBuffer;
         this.commandRecorder = commandRecorder;
         this.eventCallback = eventCallback;
+        this.metrics = metrics;
+        this.metricsCallback = metricsCallback;
+        this.now = now;
         this.eventLog = [];
         this.currentAlpha = 0;
         this.lifecycleListeners = [];
 
-        this.simulation = createSimulation(config);
+        this.simulation = new MeasuredSimulation(createSimulation(config), this.metrics, this.now);
         this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
         this.previousSnapshot = this.currentSnapshot;
 
-        this.rendererHost = new RendererHost(renderer);
+        this.rendererHost = new RendererHost(this.createMeasuredRenderer(renderer));
         this.rendererHost.init(this.simulation.getState().config);
 
         this.machine = new RuntimeStateMachine();
@@ -100,12 +123,14 @@ class GameRuntime {
     executeAction(action) {
         switch (action) {
         case RUNTIME_ACTIONS.START:
+            this.metrics.beginFrameSeries();
             this.loop.start();
             break;
         case RUNTIME_ACTIONS.PAUSE:
             this.loop.pause();
             break;
         case RUNTIME_ACTIONS.RESUME:
+            this.metrics.beginFrameSeries();
             this.loop.start();
             break;
         case RUNTIME_ACTIONS.FINISH:
@@ -155,6 +180,7 @@ class GameRuntime {
         this.inputBuffer.clear();
         this.commandRecorder.clear();
         this.simulation.reset(this.config);
+        this.metrics.reset();
         this.eventLog = [];
         this.currentAlpha = 0;
         this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
@@ -191,8 +217,16 @@ class GameRuntime {
         });
     }
 
+    getMetrics() {
+        return this.metrics.getSnapshot();
+    }
+
+    createMeasuredRenderer(renderer) {
+        return new MetricsRendererDecorator(renderer, this.metrics, this.now);
+    }
+
     setRenderer(renderer) {
-        this.rendererHost.setRenderer(renderer);
+        this.rendererHost.setRenderer(this.createMeasuredRenderer(renderer));
     }
 
     resizeRenderer(viewport) {
@@ -226,6 +260,7 @@ class GameRuntime {
 
     handleRender(alpha, frameTimestamp = null) {
         this.currentAlpha = alpha;
+        this.metrics.recordFrame(frameTimestamp);
         const interpolatedSnapshot = createInterpolatedRenderSnapshot(
             this.previousSnapshot,
             this.currentSnapshot,
@@ -239,6 +274,7 @@ class GameRuntime {
             currentSnapshot: this.currentSnapshot,
             interpolatedSnapshot: interpolatedSnapshot,
         });
+        this.metricsCallback(this.getMetrics());
     }
 }
 
