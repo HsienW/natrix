@@ -6,33 +6,49 @@
     <title>Snake</title>
 </head>
 <body>
-<div>
-    <div class="game-control-area area-margin-bottom">
-        <div class="team-scoreboard a-team"></div>
-        <div class="game-countdown"></div>
-        <div class="team-scoreboard b-team"></div>
-    </div>
-
-    <div id="game-world">
-        <div id="game-map"></div>
-        <canvas id="game-canvas" aria-label="Snake game map" hidden></canvas>
-    </div>
-
-    <div class="game-control-area area-margin-top">
-        <div class="team renderer-mode-control">
-            <label for="renderer-mode">Renderer</label>
-            <select id="renderer-mode" class="renderer-mode-select">
-                <option value="dom">DOM</option>
-                <option value="canvas">Canvas</option>
-            </select>
+<div class="game-layout">
+    <main class="game-surface">
+        <div class="game-control-area area-margin-bottom">
+            <div class="team-scoreboard a-team"></div>
+            <div class="game-countdown"></div>
+            <div class="team-scoreboard b-team"></div>
         </div>
-        <div class="control-button">
-            <div class="button start-button">Start</div>
-            <div class="button pause-button">Pause</div>
-            <div class="button finish-button">Finish</div>
+
+        <div id="game-world">
+            <div id="game-map"></div>
+            <canvas id="game-canvas" aria-label="Snake game map" hidden></canvas>
         </div>
-        <div class="team"></div>
-    </div>
+
+        <div class="game-control-area area-margin-top">
+            <div class="team renderer-mode-control">
+                <label for="renderer-mode">Renderer</label>
+                <select id="renderer-mode" class="renderer-mode-select">
+                    <option value="dom">DOM</option>
+                    <option value="canvas">Canvas</option>
+                </select>
+            </div>
+            <div class="control-button">
+                <div class="button start-button">Start</div>
+                <div class="button pause-button">Pause</div>
+                <div class="button finish-button">Finish</div>
+            </div>
+            <div class="team"></div>
+        </div>
+    </main>
+
+    <aside id="performance-panel" class="performance-panel" aria-label="Runtime metrics">
+        <h2>Runtime Metrics</h2>
+        <dl>
+            <div><dt>Runtime</dt><dd data-metric="runtime-mode">Main Thread</dd></div>
+            <div><dt>Renderer</dt><dd data-metric="renderer-mode">DOM</dd></div>
+            <div><dt>FPS</dt><dd data-metric="fps">0.0</dd></div>
+            <div><dt>Frame p50 / p95</dt><dd data-metric="frame-time">0.00 / 0.00 ms</dd></div>
+            <div><dt>Simulation p50 / p95</dt><dd data-metric="simulation-time">0.00 / 0.00 ms</dd></div>
+            <div><dt>Render p50 / p95</dt><dd data-metric="render-time">0.00 / 0.00 ms</dd></div>
+            <div><dt>Delayed Frames</dt><dd data-metric="delayed-frames">0</dd></div>
+            <div><dt>Entities</dt><dd data-metric="entity-count">0</dd></div>
+        </dl>
+    </aside>
 </div>
 </body>
 </html>

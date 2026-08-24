@@ -1,29 +1,41 @@
 const gameMarkup = `
-    <div>
-        <div class="game-control-area area-margin-bottom">
-            <div class="team-scoreboard a-team"></div>
-            <div class="game-countdown"></div>
-            <div class="team-scoreboard b-team"></div>
-        </div>
-        <div id="game-world">
-            <div id="game-map"></div>
-            <canvas id="game-canvas" hidden></canvas>
-        </div>
-        <div class="game-control-area area-margin-top">
-            <div class="team renderer-mode-control">
-                <label for="renderer-mode">Renderer</label>
-                <select id="renderer-mode" class="renderer-mode-select">
-                    <option value="dom">DOM</option>
-                    <option value="canvas">Canvas</option>
-                </select>
+    <div class="game-layout">
+        <main class="game-surface">
+            <div class="game-control-area area-margin-bottom">
+                <div class="team-scoreboard a-team"></div>
+                <div class="game-countdown"></div>
+                <div class="team-scoreboard b-team"></div>
             </div>
-            <div class="control-button">
-                <div class="button start-button">Start</div>
-                <div class="button pause-button">Pause</div>
-                <div class="button finish-button">Finish</div>
+            <div id="game-world">
+                <div id="game-map"></div>
+                <canvas id="game-canvas" hidden></canvas>
             </div>
-            <div class="team"></div>
-        </div>
+            <div class="game-control-area area-margin-top">
+                <div class="team renderer-mode-control">
+                    <label for="renderer-mode">Renderer</label>
+                    <select id="renderer-mode" class="renderer-mode-select">
+                        <option value="dom">DOM</option>
+                        <option value="canvas">Canvas</option>
+                    </select>
+                </div>
+                <div class="control-button">
+                    <div class="button start-button">Start</div>
+                    <div class="button pause-button">Pause</div>
+                    <div class="button finish-button">Finish</div>
+                </div>
+                <div class="team"></div>
+            </div>
+        </main>
+        <aside id="performance-panel">
+            <span data-metric="runtime-mode"></span>
+            <span data-metric="renderer-mode"></span>
+            <span data-metric="fps"></span>
+            <span data-metric="frame-time"></span>
+            <span data-metric="simulation-time"></span>
+            <span data-metric="render-time"></span>
+            <span data-metric="delayed-frames"></span>
+            <span data-metric="entity-count"></span>
+        </aside>
     </div>
 `;
 

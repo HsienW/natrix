@@ -265,6 +265,37 @@ describe('GameRuntime', () => {
         expect(snapshot.mapSize).toBe(41);
     });
 
+    test('exposes measured frame, simulation, render, and entity metrics', () => {
+        const times = [10, 14, 20, 26, 30, 38];
+        const metricsCallback = jest.fn();
+        const buffer = new InputBuffer();
+        const renderer = createRenderer();
+        const runtime = new GameRuntime({
+            config: defaultConfig,
+            inputBuffer: buffer,
+            renderer: renderer,
+            metricsCallback: metricsCallback,
+            now: () => times.shift(),
+            requestFrame: jest.fn(() => 1),
+            cancelFrame: jest.fn(),
+        });
+
+        runtime.handleUpdate();
+        runtime.handleRender(0, 1000);
+        runtime.handleRender(0.5, 1020);
+
+        expect(runtime.getMetrics()).toEqual({
+            frameCount: 2,
+            fps: 50,
+            frameTimeMs: {p50: 20, p95: 20},
+            simulationStepTimeMs: {p50: 4, p95: 4},
+            renderTimeMs: {p50: 6, p95: 8},
+            delayedFrames: 0,
+            entityCount: 3,
+        });
+        expect(metricsCallback).toHaveBeenLastCalledWith(runtime.getMetrics());
+    });
+
     test('render metadata carries the double-buffer snapshots and interpolated frame', () => {
         const {runtime, renderer} = createRuntime();
 
