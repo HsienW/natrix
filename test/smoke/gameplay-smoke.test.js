@@ -30,9 +30,11 @@ const gameMarkup = `
             <span data-metric="runtime-mode"></span>
             <span data-metric="renderer-mode"></span>
             <span data-metric="fps"></span>
+            <span data-metric="simulation-tick-rate"></span>
             <span data-metric="frame-time"></span>
             <span data-metric="simulation-time"></span>
             <span data-metric="render-time"></span>
+            <span data-metric="input-to-step-time"></span>
             <span data-metric="delayed-frames"></span>
             <span data-metric="entity-count"></span>
         </aside>
