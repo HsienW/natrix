@@ -1,4 +1,8 @@
-import {getCurrentTime} from './clock.js';
+import {
+    calculateElapsedTime,
+    getCurrentTime,
+    readClock,
+} from './clock.js';
 
 const SIMULATION_METHODS = [
     'step',
@@ -27,13 +31,21 @@ class MeasuredSimulation {
     }
 
     step(commands) {
-        const startedAt = this.now();
+        const startedAt = readClock(this.now);
 
         try {
             return this.simulation.step(commands);
         } finally {
-            const finishedAt = this.now();
-            this.metrics.recordSimulationStep(finishedAt - startedAt);
+            const finishedAt = readClock(this.now);
+            const durationMs = calculateElapsedTime(startedAt, finishedAt);
+
+            if (durationMs !== null) {
+                try {
+                    this.metrics.recordSimulationStep(durationMs, finishedAt);
+                } catch (error) {
+                    // Telemetry must not replace a simulation error or stop the game loop.
+                }
+            }
         }
     }
 
