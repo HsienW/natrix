@@ -11,12 +11,17 @@ import {
     createRenderSnapshot,
 } from '../render/render-model.js';
 import {MetricsRendererDecorator} from '../render/metrics-renderer-decorator.js';
-import {getCurrentTime} from '../telemetry/clock.js';
+import {
+    calculateElapsedTime,
+    getCurrentTime,
+    readClock,
+} from '../telemetry/clock.js';
 import {MeasuredSimulation} from '../telemetry/measured-simulation.js';
 import {RuntimeMetrics} from '../telemetry/runtime-metrics.js';
 
 const DEFAULT_EVENT_HANDLER = function () {};
 const DEFAULT_METRICS_HANDLER = function () {};
+const DEFAULT_METRICS_PUBLISH_INTERVAL_MS = 250;
 
 class GameRuntime {
     constructor({
@@ -31,12 +36,15 @@ class GameRuntime {
         cancelFrame,
         metrics = new RuntimeMetrics(),
         metricsCallback = DEFAULT_METRICS_HANDLER,
+        metricsPublishIntervalMs = DEFAULT_METRICS_PUBLISH_INTERVAL_MS,
         now = getCurrentTime,
     }) {
         if (!config) {
             throw new TypeError('GameRuntime requires a config.');
         }
-        if (!inputBuffer || typeof inputBuffer.drain !== 'function') {
+        if (!inputBuffer
+            || typeof inputBuffer.drain !== 'function'
+            || typeof inputBuffer.clear !== 'function') {
             throw new TypeError('GameRuntime requires an input buffer.');
         }
         if (!commandRecorder
@@ -57,6 +65,9 @@ class GameRuntime {
         if (typeof metricsCallback !== 'function') {
             throw new TypeError('GameRuntime metrics callback must be a function.');
         }
+        if (!Number.isFinite(metricsPublishIntervalMs) || metricsPublishIntervalMs < 0) {
+            throw new RangeError('GameRuntime metrics publish interval must not be negative.');
+        }
         if (typeof now !== 'function') {
             throw new TypeError('GameRuntime now must be a function.');
         }
@@ -67,6 +78,8 @@ class GameRuntime {
         this.eventCallback = eventCallback;
         this.metrics = metrics;
         this.metricsCallback = metricsCallback;
+        this.metricsPublishIntervalMs = metricsPublishIntervalMs;
+        this.lastMetricsPublishTimestamp = null;
         this.now = now;
         this.eventLog = [];
         this.currentAlpha = 0;
@@ -123,14 +136,14 @@ class GameRuntime {
     executeAction(action) {
         switch (action) {
         case RUNTIME_ACTIONS.START:
-            this.metrics.beginFrameSeries();
+            this.beginMetricsSeries();
             this.loop.start();
             break;
         case RUNTIME_ACTIONS.PAUSE:
             this.loop.pause();
             break;
         case RUNTIME_ACTIONS.RESUME:
-            this.metrics.beginFrameSeries();
+            this.beginMetricsSeries();
             this.loop.start();
             break;
         case RUNTIME_ACTIONS.FINISH:
@@ -180,7 +193,8 @@ class GameRuntime {
         this.inputBuffer.clear();
         this.commandRecorder.clear();
         this.simulation.reset(this.config);
-        this.metrics.reset();
+        this.runMetricsAction(() => this.metrics.reset());
+        this.lastMetricsPublishTimestamp = null;
         this.eventLog = [];
         this.currentAlpha = 0;
         this.currentSnapshot = createRenderSnapshot(this.simulation.getState());
@@ -221,6 +235,86 @@ class GameRuntime {
         return this.metrics.getSnapshot();
     }
 
+    runMetricsAction(action) {
+        try {
+            action();
+            return true;
+        } catch (error) {
+            return false;
+        }
+    }
+
+    beginMetricsSeries() {
+        this.lastMetricsPublishTimestamp = null;
+        this.runMetricsAction(() => {
+            if (typeof this.metrics.beginMeasurementSeries === 'function') {
+                this.metrics.beginMeasurementSeries();
+                return;
+            }
+
+            if (typeof this.metrics.beginFrameSeries === 'function') {
+                this.metrics.beginFrameSeries();
+            }
+        });
+    }
+
+    drainInputEntries() {
+        if (typeof this.inputBuffer.drainEntries === 'function') {
+            return this.inputBuffer.drainEntries();
+        }
+
+        return this.inputBuffer.drain().map(function (command) {
+            return {
+                command: command,
+                receivedAt: null,
+            };
+        });
+    }
+
+    recordInputDelays(inputEntries) {
+        if (inputEntries.length === 0
+            || typeof this.metrics.recordInputDelay !== 'function') {
+            return;
+        }
+
+        const stepStartedAt = readClock(this.now);
+        if (stepStartedAt === null) {
+            return;
+        }
+
+        for (const inputEntry of inputEntries) {
+            const delayMs = calculateElapsedTime(inputEntry.receivedAt, stepStartedAt);
+            if (delayMs === null) {
+                continue;
+            }
+
+            this.runMetricsAction(() => this.metrics.recordInputDelay(delayMs));
+        }
+    }
+
+    notifyMetrics(frameTimestamp) {
+        if (this.metricsCallback === DEFAULT_METRICS_HANDLER) {
+            return false;
+        }
+
+        const publishTimestamp = Number.isFinite(frameTimestamp)
+            ? frameTimestamp
+            : readClock(this.now);
+        if (publishTimestamp !== null
+            && this.lastMetricsPublishTimestamp !== null
+            && publishTimestamp >= this.lastMetricsPublishTimestamp
+            && publishTimestamp - this.lastMetricsPublishTimestamp
+                < this.metricsPublishIntervalMs) {
+            return false;
+        }
+
+        this.lastMetricsPublishTimestamp = publishTimestamp;
+        this.runMetricsAction(() => {
+            this.metricsCallback(this.getMetrics());
+        });
+        return true;
+    }
+
     createMeasuredRenderer(renderer) {
         return new MetricsRendererDecorator(renderer, this.metrics, this.now);
     }
@@ -239,7 +333,11 @@ class GameRuntime {
     }
 
     handleUpdate() {
-        const commands = this.inputBuffer.drain();
+        const inputEntries = this.drainInputEntries();
+        const commands = inputEntries.map(function (inputEntry) {
+            return inputEntry.command;
+        });
+        this.recordInputDelays(inputEntries);
         const tick = this.simulation.getState().tick;
         this.commandRecorder.record(tick, commands);
 
@@ -260,7 +358,7 @@ class GameRuntime {
 
     handleRender(alpha, frameTimestamp = null) {
         this.currentAlpha = alpha;
-        this.metrics.recordFrame(frameTimestamp);
+        this.runMetricsAction(() => this.metrics.recordFrame(frameTimestamp));
         const interpolatedSnapshot = createInterpolatedRenderSnapshot(
             this.previousSnapshot,
             this.currentSnapshot,
@@ -274,10 +372,11 @@ class GameRuntime {
             currentSnapshot: this.currentSnapshot,
             interpolatedSnapshot: interpolatedSnapshot,
         });
-        this.metricsCallback(this.getMetrics());
+        this.notifyMetrics(frameTimestamp);
     }
 }
 
 export {
+    DEFAULT_METRICS_PUBLISH_INTERVAL_MS,
     GameRuntime,
 };

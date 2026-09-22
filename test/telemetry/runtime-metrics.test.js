@@ -32,15 +32,19 @@ describe('RuntimeMetrics', () => {
     test('keeps simulation, render, and entity metrics separate', () => {
         const metrics = new RuntimeMetrics();
 
-        metrics.recordSimulationStep(2);
-        metrics.recordSimulationStep(6);
+        metrics.recordSimulationStep(2, 100);
+        metrics.recordSimulationStep(6, 200);
         metrics.recordRender(4);
         metrics.recordRender(12);
+        metrics.recordInputDelay(8);
+        metrics.recordInputDelay(16);
         metrics.recordEntityCount(7);
 
         expect(metrics.getSnapshot()).toEqual(expect.objectContaining({
+            simulationTickRate: 10,
             simulationStepTimeMs: {p50: 2, p95: 6},
             renderTimeMs: {p50: 4, p95: 12},
+            inputToStepTimeMs: {p50: 8, p95: 16},
             entityCount: 7,
         }));
     });
@@ -50,12 +54,17 @@ describe('RuntimeMetrics', () => {
 
         metrics.recordFrame(100);
         metrics.recordFrame(120);
-        metrics.beginFrameSeries();
+        metrics.recordSimulationStep(2, 100);
+        metrics.recordSimulationStep(2, 200);
+        metrics.beginMeasurementSeries();
         metrics.recordFrame(1000);
         metrics.recordFrame(1020);
+        metrics.recordSimulationStep(2, 1000);
+        metrics.recordSimulationStep(2, 1100);
 
         expect(metrics.getSnapshot().frameTimeMs).toEqual({p50: 20, p95: 20});
         expect(metrics.getSnapshot().delayedFrames).toBe(0);
+        expect(metrics.getSnapshot().simulationTickRate).toBe(10);
     });
 
     test('reset clears collected values', () => {
@@ -71,12 +80,28 @@ describe('RuntimeMetrics', () => {
         expect(metrics.getSnapshot()).toEqual({
             frameCount: 0,
             fps: 0,
+            simulationTickRate: 0,
             frameTimeMs: {p50: 0, p95: 0},
             simulationStepTimeMs: {p50: 0, p95: 0},
             renderTimeMs: {p50: 0, p95: 0},
+            inputToStepTimeMs: {p50: 0, p95: 0},
             delayedFrames: 0,
             entityCount: 0,
         });
+    });
+
+    test('ignores invalid and backwards timing samples', () => {
+        const metrics = new RuntimeMetrics();
+
+        metrics.recordSimulationStep(2, 100);
+        metrics.recordSimulationStep(2, 90);
+        metrics.recordInputDelay(-1);
+        metrics.recordInputDelay(Number.NaN);
+
+        expect(metrics.getSnapshot()).toEqual(expect.objectContaining({
+            simulationTickRate: 0,
+            inputToStepTimeMs: {p50: 0, p95: 0},
+        }));
     });
 
     test('validates collection settings', () => {
