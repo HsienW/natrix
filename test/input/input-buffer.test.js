@@ -15,6 +15,32 @@ describe('InputBuffer', () => {
         expect(buffer.drain()).toEqual([]);
     });
 
+    test('keeps input timing outside the command payload', () => {
+        const buffer = new InputBuffer(3, () => 125);
+        const command = {type: 'TURN'};
+
+        buffer.push(command);
+
+        expect(buffer.drainEntries()).toEqual([{
+            command: command,
+            receivedAt: 125,
+        }]);
+        expect(command).not.toHaveProperty('receivedAt');
+    });
+
+    test('keeps accepting input when the clock fails', () => {
+        const buffer = new InputBuffer(3, () => {
+            throw new Error('clock unavailable');
+        });
+
+        buffer.push({type: 'TURN'});
+
+        expect(buffer.drainEntries()).toEqual([{
+            command: {type: 'TURN'},
+            receivedAt: null,
+        }]);
+    });
+
     test('drops the oldest command when capacity is reached', () => {
         const buffer = new InputBuffer(2);
 
@@ -39,6 +65,7 @@ describe('InputBuffer', () => {
 
     test('rejects invalid capacity and command values', () => {
         expect(() => new InputBuffer(0)).toThrow(RangeError);
+        expect(() => new InputBuffer(1, null)).toThrow(TypeError);
         expect(() => new InputBuffer().push(null)).toThrow(TypeError);
     });
 });

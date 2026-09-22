@@ -1,7 +1,15 @@
 import {assertRenderer} from './renderer.js';
-import {getCurrentTime} from '../telemetry/clock.js';
+import {
+    calculateElapsedTime,
+    getCurrentTime,
+    readClock,
+} from '../telemetry/clock.js';
 
 const countRenderedEntities = function (snapshot) {
+    if (!snapshot || typeof snapshot !== 'object') {
+        return 0;
+    }
+
     let entityCount = Array.isArray(snapshot.food) ? snapshot.food.length : 0;
     const snakes = Array.isArray(snapshot.snakes) ? snapshot.snakes : [];
 
@@ -36,14 +44,22 @@ class MetricsRendererDecorator {
     }
 
     render(snapshot, meta) {
-        const startedAt = this.now();
+        const startedAt = readClock(this.now);
 
         try {
             this.renderer.render(snapshot, meta);
         } finally {
-            const finishedAt = this.now();
-            this.metrics.recordRender(finishedAt - startedAt);
-            this.metrics.recordEntityCount(countRenderedEntities(snapshot));
+            const finishedAt = readClock(this.now);
+            const durationMs = calculateElapsedTime(startedAt, finishedAt);
+
+            try {
+                if (durationMs !== null) {
+                    this.metrics.recordRender(durationMs);
+                }
+                this.metrics.recordEntityCount(countRenderedEntities(snapshot));
+            } catch (error) {
+                // Rendering errors belong to the renderer; telemetry errors stay isolated.
+            }
         }
     }
 

@@ -275,6 +275,7 @@ describe('GameRuntime', () => {
             inputBuffer: buffer,
             renderer: renderer,
             metricsCallback: metricsCallback,
+            metricsPublishIntervalMs: 0,
             now: () => times.shift(),
             requestFrame: jest.fn(() => 1),
             cancelFrame: jest.fn(),
@@ -287,13 +288,75 @@ describe('GameRuntime', () => {
         expect(runtime.getMetrics()).toEqual({
             frameCount: 2,
             fps: 50,
+            simulationTickRate: 0,
             frameTimeMs: {p50: 20, p95: 20},
             simulationStepTimeMs: {p50: 4, p95: 4},
             renderTimeMs: {p50: 6, p95: 8},
+            inputToStepTimeMs: {p50: 0, p95: 0},
             delayedFrames: 0,
             entityCount: 3,
         });
         expect(metricsCallback).toHaveBeenLastCalledWith(runtime.getMetrics());
+    });
+
+    test('measures input delay without adding timing data to commands', () => {
+        const times = [125, 130, 135];
+        const buffer = new InputBuffer(32, () => 100);
+        const runtime = new GameRuntime({
+            config: defaultConfig,
+            inputBuffer: buffer,
+            renderer: createRenderer(),
+            now: () => times.shift(),
+            requestFrame: jest.fn(() => 1),
+            cancelFrame: jest.fn(),
+        });
+
+        buffer.push({type: 'CHANGE_DIRECTION', playerId: 'a-snake', direction: 'RIGHT'});
+        runtime.handleUpdate();
+
+        expect(runtime.getMetrics().inputToStepTimeMs).toEqual({p50: 25, p95: 25});
+        expect(runtime.getCommandLog()).toEqual([{
+            type: 'CHANGE_DIRECTION',
+            playerId: 'a-snake',
+            direction: 'RIGHT',
+            tick: 0,
+        }]);
+    });
+
+    test('keeps rendering when the metrics callback fails', () => {
+        const renderer = createRenderer();
+        const runtime = new GameRuntime({
+            config: defaultConfig,
+            inputBuffer: new InputBuffer(),
+            renderer: renderer,
+            metricsCallback: function () {
+                throw new Error('panel unavailable');
+            },
+            requestFrame: jest.fn(() => 1),
+            cancelFrame: jest.fn(),
+        });
+
+        expect(() => runtime.handleRender(0, 100)).not.toThrow();
+        expect(renderer.render).toHaveBeenCalledTimes(1);
+    });
+
+    test('publishes metrics at a bounded interval', () => {
+        const metricsCallback = jest.fn();
+        const runtime = new GameRuntime({
+            config: defaultConfig,
+            inputBuffer: new InputBuffer(),
+            renderer: createRenderer(),
+            metricsCallback: metricsCallback,
+            metricsPublishIntervalMs: 250,
+            requestFrame: jest.fn(() => 1),
+            cancelFrame: jest.fn(),
+        });
+
+        runtime.handleRender(0, 100);
+        runtime.handleRender(0, 200);
+        runtime.handleRender(0, 350);
+
+        expect(metricsCallback).toHaveBeenCalledTimes(2);
     });
 
     test('render metadata carries the double-buffer snapshots and interpolated frame', () => {

@@ -25,7 +25,7 @@ describe('MeasuredSimulation', () => {
 
         expect(result).toEqual({state: {tick: 1}, events: []});
         expect(simulation.step).toHaveBeenCalledWith(commands);
-        expect(metrics.recordSimulationStep).toHaveBeenCalledWith(4);
+        expect(metrics.recordSimulationStep).toHaveBeenCalledWith(4, 14);
     });
 
     test('delegates non-measured simulation methods', () => {
@@ -40,5 +40,31 @@ describe('MeasuredSimulation', () => {
         measuredSimulation.reset({seed: 7});
 
         expect(simulation.reset).toHaveBeenCalledWith({seed: 7});
+    });
+
+    test('continues simulation when timing is unavailable', () => {
+        const simulation = createSimulation();
+        const metrics = {recordSimulationStep: jest.fn()};
+        const measuredSimulation = new MeasuredSimulation(simulation, metrics, () => {
+            throw new Error('clock unavailable');
+        });
+
+        expect(measuredSimulation.step([])).toEqual({state: {tick: 1}, events: []});
+        expect(metrics.recordSimulationStep).not.toHaveBeenCalled();
+    });
+
+    test('preserves the simulation error when metrics also fail', () => {
+        const simulation = createSimulation();
+        const simulationError = new Error('simulation failed');
+        simulation.step.mockImplementation(() => {
+            throw simulationError;
+        });
+        const measuredSimulation = new MeasuredSimulation(simulation, {
+            recordSimulationStep: function () {
+                throw new Error('metrics failed');
+            },
+        }, () => 10);
+
+        expect(() => measuredSimulation.step([])).toThrow(simulationError);
     });
 });

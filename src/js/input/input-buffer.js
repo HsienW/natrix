@@ -1,13 +1,19 @@
+import {getCurrentTime, readClock} from '../telemetry/clock.js';
+
 const DEFAULT_INPUT_BUFFER_SIZE = 32;
 
 class InputBuffer {
-    constructor(maxSize = DEFAULT_INPUT_BUFFER_SIZE) {
+    constructor(maxSize = DEFAULT_INPUT_BUFFER_SIZE, now = getCurrentTime) {
         if (!Number.isInteger(maxSize) || maxSize <= 0) {
             throw new RangeError('InputBuffer maxSize must be a positive integer.');
         }
+        if (typeof now !== 'function') {
+            throw new TypeError('InputBuffer now must be a function.');
+        }
 
         this.maxSize = maxSize;
-        this.commands = [];
+        this.now = now;
+        this.bufferedInputs = [];
     }
 
     push(command) {
@@ -15,26 +21,35 @@ class InputBuffer {
             throw new TypeError('InputBuffer only accepts command objects.');
         }
 
-        if (this.commands.length === this.maxSize) {
-            this.commands.shift();
+        if (this.bufferedInputs.length === this.maxSize) {
+            this.bufferedInputs.shift();
         }
 
-        this.commands.push({...command});
-        return this.commands.length;
+        this.bufferedInputs.push({
+            command: {...command},
+            receivedAt: readClock(this.now),
+        });
+        return this.bufferedInputs.length;
     }
 
     drain() {
-        const commands = this.commands;
-        this.commands = [];
-        return commands;
+        return this.drainEntries().map(function (entry) {
+            return entry.command;
+        });
+    }
+
+    drainEntries() {
+        const entries = this.bufferedInputs;
+        this.bufferedInputs = [];
+        return entries;
     }
 
     clear() {
-        this.commands = [];
+        this.bufferedInputs = [];
     }
 
     size() {
-        return this.commands.length;
+        return this.bufferedInputs.length;
     }
 }
 

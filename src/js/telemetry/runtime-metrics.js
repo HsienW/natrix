@@ -1,12 +1,17 @@
 const DEFAULT_SAMPLE_LIMIT = 300;
 const DEFAULT_DELAYED_FRAME_MS = 50;
+const MILLISECONDS_PER_SECOND = 1000;
+const MEDIAN_PERCENTILE = 0.5;
+const SLOW_PERCENTILE = 0.95;
+
+const EMPTY_TIMING_SUMMARY = Object.freeze({
+    p50: 0,
+    p95: 0,
+});
 
 const createTimingSummary = function (samples) {
-    if (samples.length === 0) {
-        return {
-            p50: 0,
-            p95: 0,
-        };
+    if (!Array.isArray(samples) || samples.length === 0) {
+        return {...EMPTY_TIMING_SUMMARY};
     }
 
     const sortedSamples = samples.slice().sort(function (first, second) {
@@ -20,8 +25,8 @@ const createTimingSummary = function (samples) {
     };
 
     return {
-        p50: valueAtPercentile(0.5),
-        p95: valueAtPercentile(0.95),
+        p50: valueAtPercentile(MEDIAN_PERCENTILE),
+        p95: valueAtPercentile(SLOW_PERCENTILE),
     };
 };
 
@@ -44,16 +49,24 @@ class RuntimeMetrics {
 
     reset() {
         this.frameTimes = [];
+        this.simulationTickTimes = [];
         this.simulationStepTimes = [];
         this.renderTimes = [];
+        this.inputToStepTimes = [];
         this.frameCount = 0;
         this.delayedFrames = 0;
         this.entityCount = 0;
         this.previousFrameTimestamp = null;
+        this.previousSimulationTimestamp = null;
+    }
+
+    beginMeasurementSeries() {
+        this.previousFrameTimestamp = null;
+        this.previousSimulationTimestamp = null;
     }
 
     beginFrameSeries() {
-        this.previousFrameTimestamp = null;
+        this.beginMeasurementSeries();
     }
 
     addSample(samples, durationMs) {
@@ -76,6 +89,10 @@ class RuntimeMetrics {
 
         if (this.previousFrameTimestamp !== null) {
             const frameTime = timestamp - this.previousFrameTimestamp;
+            if (frameTime < 0) {
+                return;
+            }
+
             this.addSample(this.frameTimes, frameTime);
 
             if (frameTime > this.delayedFrameMs) {
@@ -86,12 +103,31 @@ class RuntimeMetrics {
         this.previousFrameTimestamp = timestamp;
     }
 
-    recordSimulationStep(durationMs) {
+    recordSimulationStep(durationMs, timestamp = null) {
         this.addSample(this.simulationStepTimes, durationMs);
+
+        if (!Number.isFinite(timestamp)) {
+            return;
+        }
+
+        if (this.previousSimulationTimestamp !== null) {
+            const tickTime = timestamp - this.previousSimulationTimestamp;
+            if (tickTime < 0) {
+                return;
+            }
+
+            this.addSample(this.simulationTickTimes, tickTime);
+        }
+
+        this.previousSimulationTimestamp = timestamp;
     }
 
     recordRender(durationMs) {
         this.addSample(this.renderTimes, durationMs);
+    }
+
+    recordInputDelay(durationMs) {
+        this.addSample(this.inputToStepTimes, durationMs);
     }
 
     recordEntityCount(entityCount) {
@@ -100,29 +136,39 @@ class RuntimeMetrics {
         }
     }
 
-    calculateFps() {
-        if (this.frameTimes.length === 0) {
+    calculateRate(intervals) {
+        if (!Array.isArray(intervals) || intervals.length === 0) {
             return 0;
         }
 
-        const measuredTime = this.frameTimes.reduce(function (total, frameTime) {
-            return total + frameTime;
+        const measuredTime = intervals.reduce(function (total, interval) {
+            return total + interval;
         }, 0);
 
         if (measuredTime <= 0) {
             return 0;
         }
 
-        return this.frameTimes.length * 1000 / measuredTime;
+        return intervals.length * MILLISECONDS_PER_SECOND / measuredTime;
+    }
+
+    calculateFps() {
+        return this.calculateRate(this.frameTimes);
+    }
+
+    calculateSimulationTickRate() {
+        return this.calculateRate(this.simulationTickTimes);
     }
 
     getSnapshot() {
         return {
             frameCount: this.frameCount,
             fps: this.calculateFps(),
+            simulationTickRate: this.calculateSimulationTickRate(),
             frameTimeMs: createTimingSummary(this.frameTimes),
             simulationStepTimeMs: createTimingSummary(this.simulationStepTimes),
             renderTimeMs: createTimingSummary(this.renderTimes),
+            inputToStepTimeMs: createTimingSummary(this.inputToStepTimes),
             delayedFrames: this.delayedFrames,
             entityCount: this.entityCount,
         };
@@ -132,6 +178,7 @@ class RuntimeMetrics {
 export {
     DEFAULT_DELAYED_FRAME_MS,
     DEFAULT_SAMPLE_LIMIT,
+    MILLISECONDS_PER_SECOND,
     RuntimeMetrics,
     createTimingSummary,
 };

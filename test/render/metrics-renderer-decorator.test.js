@@ -56,7 +56,37 @@ describe('MetricsRendererDecorator', () => {
     });
 
     test('counts empty and missing render collections safely', () => {
+        expect(countRenderedEntities(null)).toBe(0);
         expect(countRenderedEntities({})).toBe(0);
         expect(countRenderedEntities({food: [], snakes: []})).toBe(0);
+    });
+
+    test('does not stop rendering when metrics fail', () => {
+        const renderer = createRenderer();
+        const decorator = new MetricsRendererDecorator(renderer, {
+            recordRender: function () {
+                throw new Error('metrics failed');
+            },
+            recordEntityCount: jest.fn(),
+        }, () => 10);
+
+        expect(() => decorator.render({}, {})).not.toThrow();
+        expect(renderer.render).toHaveBeenCalledTimes(1);
+    });
+
+    test('preserves the renderer error when metrics also fail', () => {
+        const renderer = createRenderer();
+        const rendererError = new Error('renderer failed');
+        renderer.render.mockImplementation(() => {
+            throw rendererError;
+        });
+        const decorator = new MetricsRendererDecorator(renderer, {
+            recordRender: function () {
+                throw new Error('metrics failed');
+            },
+            recordEntityCount: jest.fn(),
+        }, () => 10);
+
+        expect(() => decorator.render({}, {})).toThrow(rendererError);
     });
 });
