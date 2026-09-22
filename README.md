@@ -41,7 +41,7 @@ You can switch the renderer at runtime from the control below the game. The Canv
 - **Explicit lifecycle state**: start, pause, resume, finish, and reset are handled by a runtime state machine.
 - **Deterministic simulation and replay**: seeded RNG, tick-indexed command logs, replay payloads, and state hashes make gameplay reproducible.
 - **Renderer boundary**: `DOMRenderer`, `CanvasRenderer`, and `NullRenderer` share the same `init / render / resize / destroy` contract.
-- **Runtime telemetry**: measured simulation and renderer decorators expose rolling FPS and p50/p95 timing without changing deterministic game state.
+- **Runtime telemetry**: measured simulation and renderer decorators expose rolling FPS, simulation tick rate, and p50/p95 timing without changing deterministic game state.
 - **Headless testability**: core simulation and replay logic can run without DOM rendering.
 - **Regression coverage**: baseline gameplay, runtime lifecycle, replay, renderer behavior, input buffering, and deterministic fixtures are covered by Jest.
 
@@ -147,9 +147,9 @@ This codebase uses patterns only where they describe real boundaries:
 
 ## Runtime Metrics
 
-`GameRuntime.getMetrics()` returns a defensive metrics snapshot. The live panel reports FPS, frame time p50/p95, simulation step p50/p95, render time p50/p95, delayed frames, and currently rendered entities.
+`GameRuntime.getMetrics()` returns a metrics snapshot. The live panel reports FPS, simulation tick rate, frame time p50/p95, simulation step p50/p95, render time p50/p95, input-to-step delay p50/p95, delayed frames, and currently rendered entities. Input timestamps stay in the input buffer metadata, so commands and replay payloads remain deterministic.
 
-Timing percentiles and FPS use the latest 300 samples. A frame taking more than 50 ms is counted as delayed. These values are local observations, not published benchmark claims.
+Timing percentiles and rates use the latest 300 samples. A frame taking more than 50 ms is counted as delayed, and the live snapshot is published every 250 ms by default. Clock, metrics, or panel failures skip telemetry work instead of stopping gameplay. These values are local observations, not published benchmark claims.
 
 ## License
 
